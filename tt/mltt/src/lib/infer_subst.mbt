@@ -1,7 +1,4 @@
 ///|
-pub typealias MutMap[K, V] = @hashmap.T[K, V]
-
-///|
 pub typealias NameMap = @immut/hashmap.T[String, String]
 
 ///|
@@ -19,7 +16,7 @@ pub typealias Env = @immut/hashmap.T[String, Syntax]
 // normalize the type and then compare them. 
 ///|
 pub fn check_expr_is_type(env : Env, expr : Syntax) -> Int!Failure {
-  match normalize!(infer_subst!(env, expr)) {
+  match normalize_subst!(infer_subst!(env, expr)) {
     Universe(i) => i
     _ => fail!("expression is expected to be a type")
   }
@@ -82,18 +79,19 @@ fn subst(name : String, subst_to : Syntax, expr : Syntax) -> Syntax!Failure {
 }
 
 ///|
-pub fn normalize(expr : Syntax) -> Syntax!Failure {
+pub fn normalize_subst(expr : Syntax) -> Syntax!Failure {
   match expr {
     Var(_) as v => v
     Universe(_) as u => u
     TyFun(param_name, param_ty, return_ty) =>
-      TyFun(param_name, normalize!(param_ty), normalize!(return_ty))
+      TyFun(param_name, normalize_subst!(param_ty), normalize_subst!(return_ty))
     Lam(param_name, param_ty, body) =>
-      Lam(param_name, normalize!(param_ty), normalize!(body))
+      Lam(param_name, normalize_subst!(param_ty), normalize_subst!(body))
     App(func, arg) =>
-      match normalize!(func) {
-        Lam(param_name, _, body) => normalize!(subst!(param_name, arg, body))
-        _ as f => App(f, normalize!(arg))
+      match normalize_subst!(func) {
+        Lam(param_name, _, body) =>
+          normalize_subst!(subst!(param_name, arg, body))
+        _ as f => App(f, normalize_subst!(arg))
       }
   }
 }
@@ -101,7 +99,7 @@ pub fn normalize(expr : Syntax) -> Syntax!Failure {
 // (alpha conversion) λ x. x = λ y. y
 
 ///|
-fn alpha_equiv(maps : NameMap, expr1 : Syntax, expr2 : Syntax) -> Bool {
+pub fn alpha_equiv(maps : NameMap, expr1 : Syntax, expr2 : Syntax) -> Bool {
   match (expr1, expr2) {
     (Var(name1), Var(name2)) =>
       match maps.find(name1) {
@@ -121,7 +119,11 @@ fn alpha_equiv(maps : NameMap, expr1 : Syntax, expr2 : Syntax) -> Bool {
 
 ///|
 fn expr_equal(expr1 : Syntax, expr2 : Syntax) -> Bool!Failure {
-  alpha_equiv(@immut/hashmap.new(), normalize!(expr1), normalize!(expr2))
+  alpha_equiv(
+    @immut/hashmap.new(),
+    normalize_subst!(expr1),
+    normalize_subst!(expr2),
+  )
 }
 
 ///|
@@ -136,7 +138,7 @@ pub fn infer_subst(env : Env, expr : Syntax) -> Syntax!Failure {
       Universe(@math.maximum(universe_param, universe_return))
     }
     Lam(param_name, param_ty, body) => {
-      let universe_param = check_expr_is_type!(env, param_ty)
+      let _ = check_expr_is_type!(env, param_ty)
       let env2 = env.add(param_name, param_ty)
       let body_ty = infer_subst!(env2, body)
       TyFun(param_name, param_ty, body_ty)
@@ -144,7 +146,7 @@ pub fn infer_subst(env : Env, expr : Syntax) -> Syntax!Failure {
     App(func, arg) => {
       let func_ty = infer_subst!(env, func)
       let arg_ty = infer_subst!(env, arg)
-      match normalize!(func_ty) {
+      match normalize_subst!(func_ty) {
         // Γ |- f: Π (x:A). B
         // Γ |- a: A
         // -------------------

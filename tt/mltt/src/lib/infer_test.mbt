@@ -139,7 +139,17 @@ let ex4 : Syntax = lam(
 ///|
 fn test_infer_subst!(expr : Syntax) -> Syntax!Failure {
   let env = @immut/hashmap.from_array(predef)
-  normalize!(infer_subst!(env, expr))
+  normalize_subst!(infer_subst!(env, expr))
+}
+
+///|
+fn test_infer_nbe(expr : Syntax) -> Syntax!Failure {
+  let mut env = NbEContext::empty()
+  for ntyp in predef {
+    let (name, typ) = ntyp
+    env = env.add_var(name, eval!(env.values, typ))
+  }
+  value_to_expr!(infer_nbe!(env, expr), env.names)
 }
 
 ///|
@@ -147,6 +157,13 @@ test "ex1" {
   let std = pi(("x", Var("Bool")), pi(("y", Var("Bool")), Var("Bool")))
   let typ_subst = test_infer_subst!(ex1)
   assert_eq!(typ_subst, std)
+}
+
+///|
+test "ex1_nbe" {
+  let typ_subst = test_infer_nbe!(ex1)
+  let typ_nbe = test_infer_nbe!(ex1)
+  assert_true!(alpha_equiv(@immut/hashmap.new(), typ_subst, typ_nbe))
 }
 
 ///|
@@ -166,10 +183,24 @@ test "ex2" {
 }
 
 ///|
+test "ex2_nbe" {
+  let typ_subst = test_infer_nbe!(ex2)
+  let typ_nbe = test_infer_nbe!(ex2)
+  assert_true!(alpha_equiv(@immut/hashmap.new(), typ_subst, typ_nbe))
+}
+
+///|
 test "ex3" {
   let std = pi(("n", Var("Nat")), app("eq", [Var("Nat"), Var("n"), Var("n")]))
   let typ_subst = test_infer_subst!(ex3)
   assert_eq!(typ_subst, std)
+}
+
+///|
+test "ex3_nbe" {
+  let typ_subst = test_infer_nbe!(ex3)
+  let typ_nbe = test_infer_nbe!(ex3)
+  assert_true!(alpha_equiv(@immut/hashmap.new(), typ_subst, typ_nbe))
 }
 
 ///|
@@ -180,4 +211,11 @@ test "ex4" {
   )
   let typ_subst = test_infer_subst!(ex4)
   assert_eq!(typ_subst, std)
+}
+
+///|
+test "ex4_nbe" {
+  let typ_subst = test_infer_nbe!(ex4)
+  let typ_nbe = test_infer_nbe!(ex4)
+  assert_true!(alpha_equiv(@immut/hashmap.new(), typ_subst, typ_nbe))
 }
