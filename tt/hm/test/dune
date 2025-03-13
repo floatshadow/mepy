@@ -1,0 +1,8 @@
+(test
+ (name test)
+ (libraries hm base)
+ (modules test))
+
+(env
+  (dev
+    (flags (:standard -warn-error -A))))
