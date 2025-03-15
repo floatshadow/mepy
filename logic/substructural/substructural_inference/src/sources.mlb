@@ -1,0 +1,29 @@
+$(SML_LIB)/basis/basis.mlb
+(* $(SML_LIB)/smlnj-lib/Util/smlnj-lib.mlb *)
+
+local
+  ann
+    "sequenceNonUnit error"
+    "redundantMatch error"
+    "nonexhaustiveMatch ignore"
+    "nonexhaustiveBind ignore"
+   in
+
+      sort.sml
+      term.sml
+      state.sml
+      federation.sml
+
+      saturate.sml
+      linear.sml
+      ordered.sml
+
+      test.sml
+      top.sml
+
+   end
+in
+  structure Top
+end
+
+main-test.sml

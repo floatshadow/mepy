@@ -1,0 +1,27 @@
+Small implementation of structural, linear, and ordered inference
+15-836 Fall 2023
+Frank Pfenning
+
+%%% Running the examples from Lecture 1 with SML/NJ
+
+$ sml
+- CM.make "sources.cm";
+- use "lecture1.sml";
+- run1();  (* graph reachability; structural*)
+- run2();  (* coin exchange, linear *)
+- run3();  (* blocks world, linear *)
+- run4();  (* matching parentheses, ordered *)
+- run5();  (* binary increment, ordered *)
+
+%%% Regression testing
+
+%% with SML/NJ
+
+$ sml
+- CM.make "sources.cm";
+- Top.test();
+
+%% with mlton
+
+$ make test
+./test

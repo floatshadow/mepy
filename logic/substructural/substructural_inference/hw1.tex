@@ -1,0 +1,311 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1.0in]{geometry}
+\usepackage{lecnotes}
+\input{lmacros}
+
+\newcommand{\course}{15-836: Substructural Logics}
+\newcommand{\lecturer}{Frank Pfenning}
+\newcommand{\lecdate}{Due Thu Sep 7, 2023}
+\newcommand{\lecnum}{1}
+\newcommand{\lectitle}{Assignment 1}
+
+\title{Assignment \lecnum \\ Substructural Inference}
+\date{Due Thursday, September 7, 2023 \\ 60 points}
+
+\lhead[\fancyplain{}{\bfseries A\lecnum.\thepage}]%
+      {\fancyplain{}{\bfseries\lectitle}}
+\chead[]{}
+\rhead[\fancyplain{}{\bfseries\lectitle}]%
+      {\fancyplain{}{\bfseries A\lecnum.\thepage}}
+\lfoot[{\small\scshape Assignments}]{{\small\scshape Assignments}}
+\cfoot[]{}
+\rfoot[{\small\scshape\lecdate}]{{\small\scshape\lecdate}}
+
+\begin{document}
+
+\maketitle
+
+In this assignment we explore structural, linear, and ordered inference.
+You will write some inference rules and can test them on your own
+machines using the provided code.  For testing purposes, you should use
+Standard ML of New Jersey (SML/NJ).  Eventually, you should hand them in
+via Gradescope which also has its own tests and will assign a score.  In
+addition we may review your code.  You may hand in as many times as you
+like.
+
+The file you should hand in must be called \texttt{hw1.sml}. A template
+is in \texttt{starter/hw1.sml}.  The autograder will assign 44 points;
+the remaining 16 points will be at my discretion.  The tasks to describe
+your code is optional, but maybe useful in case you don't have the full
+autograder score and I have to read your rules.
+
+Problem~\ref{problem:pcp} is entirely optional and is not included in
+the autograder.  If you decide to hand this in, it should be as a
+separate file on Gradescope with some brief instructions on how to run
+it.
+
+The handout has the
+following structure:
+\begin{itemize}
+\item \texttt{src/}, the implementation of structural, linear, and ordered inference
+\item \texttt{starter/}, the starter code for this assignment, including a template
+  for \texttt{hw1.sml}
+\item \texttt{hw1.pdf}, this assignment spec
+\item \texttt{*.\{tex,sty\}}, LaTeX source, macros, and style files
+\end{itemize}
+  
+
+\section{Deductive Parsing with Ordered Inference}
+\label{problem:parsing-ordered}
+
+Any context-free grammar can be put into normal form where only the start symbol $S$ may
+have a production with an empty right-hand side, $S \rightarrow \epsilon$.
+
+We represent an input word in the form of an \emph{ordered state}
+\[
+  \$\; a_1\, \ldots\, a_n\; \$
+\]
+where all of the $a_i$ are propositions representing the letters of the
+alphabet for a particular grammar and $\$$ are propositions functioning
+as end markers.
+
+The task is to translate a given collection of grammar productions into
+a collection of inference rules such that
+\[
+  \deduce[\ddd]{S}{\$\; a_1\; \ldots\; a_n\; \$}
+\]
+can be derived by ordered inference if and only if
+$S \longrightarrow a_1\; \ldots\; a_n$ according to the grammar.
+(This should not be confused with notation of $\Omega \longrightarrow \Omega'$
+we introduced in lecture where the arrow points exactly the other way,
+unfortunately.)
+
+Because of the nondeterminism that may be inherent in grammar
+productions, the corresponding inference rules should generate a finite
+set of all reachable states.  Success (= the initial word is generated
+by the grammar) should mean that one of these states is a single $S$.
+
+\begin{task} (optional)
+  Describe, in a comment, how grammar productions are translated into inference rules in
+  general.
+\end{task}
+
+\begin{task}
+  \label{task:anbn}
+  A grammar generating the language $a^n\; b^n$ for $n \geq 0$
+  \[
+    \begin{array}{lcl}
+      S & \rightarrow & \epsilon \\
+      S & \rightarrow & T \\
+      T & \rightarrow & a\; T\; b \\
+      T & \rightarrow & a\; b
+    \end{array}
+  \]
+\end{task}
+
+\begin{task}
+  \label{task:palindromes}
+  A grammar generating the language of nonempty even-length palindromes
+  $w\; w^R$ over the alphabet $\{a,b\}$.
+  \[
+    \begin{array}{lcl}
+      S & \rightarrow & a\; S\; a \\
+      S & \rightarrow & a\; a \\
+      S & \rightarrow & b\; S\; b \\
+      S & \rightarrow & b\; b
+    \end{array}
+  \]
+\end{task}
+
+\begin{task}
+  \label{task:matching-parens}
+  A grammar generating the language of matching parentheses 
+  \[
+    \begin{array}{lcl}
+      S & \rightarrow & \epsilon \\
+      S & \rightarrow & T \\
+      T & \rightarrow & T\; T \\
+      T & \rightarrow & '('\; T\; ')' \\
+      T & \rightarrow & '('\; ')'
+    \end{array}
+  \]
+\end{task}
+
+\section{Deductive Parsing with Structural Inference}
+
+We have seen deductive parsing from the perspective of ordered
+inference in Problem~\ref{problem:parsing-ordered}.  In this problem we implement
+parsing using \emph{structural inference}.  The technique we
+use is at the core of a general method for mapping ordered
+inference to structural inference.
+
+We use a unary representation of the natural numbers as
+$0, \ms{s}(0), \ms{s}(\ms{s}(0)), \ldots$.  A word
+\[
+  a_1\; \ldots\; a_n
+\]
+is represented as the propositions
+\[
+  \ms{ext}(0, a_1, 1), \ms{ext}(1, a_2, 2), \ldots, \ms{ext}(n-1, a_n, n), \ms{num}(n)
+\]
+Your task is to translate a grammar into a collection of inference
+rules such that starting from the state above you can deduce
+\[
+  \ms{ext}(0, S, n)
+\]
+where $S$ is the starting symbol if and only if
+$S \longrightarrow a_1\; \ldots\; a_n$.  As a corner case, the empty
+string is represented just by $\ms{num}(0)$ and if it is generated by
+the grammar the proposition $\ms{ext}(0, S, 0)$ should be in the
+saturated state.
+
+You may make the same assumptions about grammars as in
+Problem~\ref{problem:parsing-ordered}.  For any given grammar, your set
+of rules should saturate for any valid input as described above.
+
+\begin{task} (optional)
+  Describe in a comment how the grammar productions are translated into inference rules in
+  general.
+\end{task}
+
+\begin{task}
+  The grammar in Task~\ref{task:anbn}.
+\end{task}
+
+\begin{task}
+  The grammar in Task~\ref{task:palindromes}.
+\end{task}
+
+\begin{task}
+  The grammar in Task~\ref{task:matching-parens}.
+\end{task}
+
+\section{Two-Counter Minsky Machines}
+
+A two-counter Minksy Machine consists of two register $\ms{r1}$ and $\ms{r2}$, a program
+counter $\ms{p}$, and a finite program consisting of commands $i : \ms{INC}(r, j)$ and
+$i : \ms{JZDEC}(r, j_z, j_{nz})$.  The registers as well as the program counter can
+hold arbitrary natural numbers encoded in unary form: $0$, $\ms{s}(0)$,
+$\ms{s}(\ms{s}(0))$, etc.
+
+If the program counter is $i$ and $i : \ms{INC}(r,j)$ then the machine increments register
+$r$ and jumps to instruction $j$.
+
+If the program counter is $i$ and $i : \ms{JZDEC}(r, j_z, j_{nz})$ then the machine
+first tests register $r$.  If its current value is $0$, it jumps to address $j_z$.  If its
+current value is greater than $0$, the machine will decrement register $r$ and jump to
+address $j_{nz}$.
+
+We assume all addresses $i$ occurring in a program are ``in bounds'' in the sense that
+there is a unique instruction $i : I$ except for $i = 0$.  We start execution at
+instruction $1$ and halt when we jump to $0$ (because there is no corresponding
+instruction).
+
+We encode the current execution state of a Minsky machine in three linear propositions
+$\ms{reg}(\ms{r1}, m)$, $\ms{reg}(\ms{r2}, n)$, and $\ms{pc}(i)$.  Your task is to encode
+the program as a set of linear inference rules such that the program transitions from one
+state to the next if and only if the representation of the state changes correspondingly.
+Because a Minsky machine is deterministic, your encoding should be deterministic as well.
+And because the halting problem for two-counter Minsky machines is undecidable, your
+encoding cannot guarantee quiescence.
+
+\begin{task} (optional)
+  Describe in a comment how a program is translated into a set of inference rules.
+\end{task}
+
+\begin{task}
+  Give an encoding of the program
+  \[
+    \begin{array}{lcl}
+      0 & : & \\
+      1 & : & \ms{INC}(\ms{r1}, 2) \\
+      2 & : & \ms{INC}(\ms{r2}, 0)
+    \end{array}
+  \]
+\end{task}
+
+\begin{task}
+  Give an encoding of the program
+  \[
+    \begin{array}{lcl}
+      0 & : & \\
+      1 & : & \ms{JZDEC}(\ms{r2}, 0, 2) \\
+      2 & : & \ms{INC}(\ms{r1}, 1)
+    \end{array}
+  \]
+\end{task}
+
+\begin{task}
+  Give an encoding of the program
+  \[
+    \begin{array}{lcl}
+      0 & : & \\
+      1 & : & \ms{JZDEC}(\ms{r2}, 2, 1) \\
+      2 & : & \ms{JZDEC}(\ms{r1}, 0, 3) \\
+      3 & : & \ms{JZDEC}(\ms{r1}, 0, 4) \\
+      4 & : & \ms{INC}(\ms{r2}, 2)
+    \end{array}
+  \]
+\end{task}
+
+\section{Post Correspondence Problem (Optional)}
+\label{problem:pcp}
+
+In this problem you are asked to encode instances of Post Correspondence Problem (PCP) as
+rules for ordered inference.  We like the formulation of the problem as being given a set
+of dominos labeled with two words (top and bottom) over a finite alphabet.  A solution to
+and instance of PCP is a list of these dominos such that the concatenation of the top
+words and the concatenation of the bottom words are the same string.  See, for example,
+the Wikipedia article on
+\href{https://en.wikipedia.org/wiki/Post_correspondence_problem}{Post Correspondence
+  Problem} for additional explanation and examples.
+
+Your task is to translate a set of dominos into ordered inference rules such that
+\[
+  \deduce[\ddd]{\ms{success}}{\ms{init}}
+\]
+if and only if the problem has a solution.  We are not explicitly asking this, but one
+should be able to read off the list of dominos from the proof of $\ms{success}$ from
+$\ms{init}$.
+
+The translation algorithm for an arbitrary set of dominos should be described in a comment
+in your solution file.
+
+Because PCP is undecidable, you will not be able to give an encoding that always
+terminates with a finite number of reachable states.  Instead we will give the inference
+engine a reasonable bound so it can fail when no solution
+
+\newcommand{\domino}[2]{\left[\begin{array}[c]{c}#1\\#2\end{array}\right]}
+
+\begin{task}
+  Describe in a comment how a set of dominos is represented as a collection of inference
+  rule.
+\end{task}
+
+\begin{task}
+  Give an encoding of the dominos
+  \[
+    \domino{b\,c}{c\,a}, \domino{a}{a\,b}, \domino{c\,a}{a}, \domino{a\,b\,c}{c}
+  \]
+\end{task}
+
+\begin{task}
+  Give an encoding of the dominos
+  \[
+    \domino{a\,b\,c}{a\,b}, \domino{c\,a}{a}, \domino{a\,c\,c}{b\,a}
+  \]
+\end{task}
+
+\begin{task}
+  Give an encoding of the dominos
+  \[
+    \domino{a}{b\,a\,a}, \domino{a\,b}{a\,a}, \domino{b\,b\,a}{b\,b}
+  \]
+\end{task}
+
+
+\bibliographystyle{alpha}
+\bibliography{fp,lfs}
+
+\end{document}
