@@ -1,0 +1,9 @@
+(test
+ (name test)
+ (libraries inference)
+ (modules test))
+
+(env
+ (dev
+  (flags
+   (:standard -warn-error -A))))

@@ -1,0 +1,8 @@
+(library
+ (name inference)
+ (public_name inference))
+
+(env
+ (dev
+  (flags
+   (:standard -warn-error -A -g))))

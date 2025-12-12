@@ -1,0 +1,10 @@
+(executable
+ (public_name lab1)
+ (name top)
+ (libraries inference)
+ (modes byte))
+
+(env
+ (dev
+  (flags
+   (:standard -warn-error -A -g))))
