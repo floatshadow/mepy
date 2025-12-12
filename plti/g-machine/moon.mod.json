@@ -1,9 +1,9 @@
 {
   "name": "floatshaow/g-machine",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "deps": {
-    "Yoorkin/ArgParser": "0.1.9",
-    "moonbitlang/x": "0.4.23"
+    "Yoorkin/ArgParser": "0.2.0",
+    "moonbitlang/x": "0.4.38"
   },
   "readme": "README.md",
   "repository": "",

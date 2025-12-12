@@ -1,4 +1,6 @@
-pub typealias ScDefs = List[ScDef[String]]
+
+pub type ScDefs = List[ScDef[String]]
+
 pub enum RawExpr[T] {
   Var(T)
   Num(Int)
@@ -17,12 +19,12 @@ pub struct ScDef[T] {
   body: RawExpr[T]
 } derive(Show)
 
-pub fn ScDef::new[T](name: String, args: List[T], body: RawExpr[T]) -> ScDef[T] {
+pub fn[T] ScDef::new(name: String, args: List[T], body: RawExpr[T]) -> ScDef[T] {
   ScDef:: { name, args, body }
 }
 
 pub let preludes : List[ScDef[String]] = {
-  let args : (FixedArray[String]) -> List[String] = @immut/list.of
+  let args : (ArrayView[String]) -> List[String] = @list.from_array
   let id = ScDef::new("id", args(["x"]), Var("x"))
   let k =
     ScDef::new("K", args(["x", "y"]), Var("x")) // K x y = x
@@ -33,5 +35,5 @@ pub let preludes : List[ScDef[String]] = {
     ScDef::new("compose", args(["f", "g", "x"]), App(Var("f"), App(Var("g"), Var("x"))) ) // compose f g x = f (g x)
   let twice =
     ScDef::new("twice", args(["f"]), App(App(Var("compose"), Var("f")), Var("f")) ) // twice f = compose f f
-  @immut/list.of([id, k, k1, s, compose, twice])
+  @list.from_array([id, k, k1, s, compose, twice])
 }

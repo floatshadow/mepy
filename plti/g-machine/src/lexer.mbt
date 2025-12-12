@@ -1,4 +1,4 @@
-typealias HashMap[K, V] = @immut/hashmap.T[K, V]
+using @immut/hashmap { type HashMap }
 
 pub struct Lexer {
   buffer: String
@@ -51,7 +51,7 @@ let keywords: HashMap[String, Keyword] = @immut/hashmap.from_array([
 pub fn Lexer::new(s: String) -> Lexer {
   let buffer = StringBuilder::new(size_hint=s.length() + 1)
   buffer.write_string(s)
-  buffer.write_char(Char::from_int(0))
+  buffer.write_char(Int::unsafe_to_char(0))
   Lexer:: {
     buffer: buffer.to_string(),
     index: 0,
@@ -70,7 +70,7 @@ fn Lexer::get_loc(self : Lexer) -> Loc {
 }
 
 fn Lexer::make_span(self : Lexer, start : Int) -> String {
-  self.buffer.substring(start~, end=self.index)
+  self.buffer.unsafe_substring(start~, end=self.index)
 }
 
 fn Lexer::make_token(self : Lexer, tag : TokenTag, loc : Loc) -> Token {
@@ -86,15 +86,11 @@ fn Lexer::eof(self : Lexer) -> Token {
 }
 
 fn Lexer::is_keyword(s : String) -> Keyword? {
-  keywords.find(s)
+  keywords.get(s)
 }
 
 fn Lexer::ch(self : Lexer) -> Char {
-  self.buffer[self.index]
-}
-
-fn Lexer::ch_at(self : Lexer, i : Int) -> Char {
-  self.buffer[self.index + i]
+  self.buffer.get_char(self.index).unwrap()
 }
 
 fn Lexer::ident(self : Lexer, loc : Loc) -> Token {
@@ -127,8 +123,8 @@ fn Lexer::numeric_literal(self : Lexer, loc : Loc) -> Token {
   }
 
   try {
-    let value = @strconv.parse_int!(
-      self.buffer.substring(start~, end=self.index),
+    let value = @strconv.parse_int(
+      self.buffer.unsafe_substring(start~, end=self.index),
     )
     self.make_token(TokenTag::IntLiteral(value), loc)
   } catch {
@@ -139,7 +135,7 @@ fn Lexer::numeric_literal(self : Lexer, loc : Loc) -> Token {
 fn Lexer::skip_comment(self : Lexer) -> Unit {
   self.index += 2
   while true {
-    if self.ch() == '\x00' {
+    if self.ch() == '\u{00}' {
       break
     } else if self.ch() == '\n' {
       self.index += 1
@@ -151,10 +147,10 @@ fn Lexer::skip_comment(self : Lexer) -> Unit {
 }
 
 
-pub fn Lexer::next_err(self : Lexer) -> Token!Failure {
+pub fn Lexer::next_err(self : Lexer) -> Token raise Failure {
   let tok = self.next()
   match tok.tag {
-    TokenTag::Err(msg) => fail!(msg)
+    TokenTag::Err(msg) => fail(msg)
     _ => tok
   }
 }
@@ -164,7 +160,7 @@ fn Lexer::next(self : Lexer) -> Token {
     let c = self.ch()
     let loc = self.get_loc()
     match c {
-      '\x00' => return self.eof()
+      '\u{00}' => return self.eof()
       ' ' | '\t' | '\r' => {
         self.index += 1
         while (match self.ch() {

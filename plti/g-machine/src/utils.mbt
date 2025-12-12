@@ -1,4 +1,4 @@
-pub typealias List[T] = @immut/list.T[T]
+using @list { type List }
 
 // A example of lazy List.
 enum Stream[T] {
@@ -6,27 +6,27 @@ enum Stream[T] {
   Cons(T, () -> Stream[T])
 }
 
-fn Stream::from_list[T](l : List[T]) -> Stream[T] {
+fn[T] Stream::from_list(l : List[T]) -> Stream[T] {
   match l {
-    Nil => Stream::Empty
-    Cons(x, xs) => Stream::Cons(x, fn () { Stream::from_list(xs) } )
+    Empty => Stream::Empty
+    More(x, tail=xs) => Stream::Cons(x, fn () { Stream::from_list(xs) } )
   }
 }
 
-fn Stream::map[A, B](self: Stream[A], f: (A) -> B) -> Stream[B] {
+fn[A, B] Stream::map(self: Stream[A], f: (A) -> B) -> Stream[B] {
   match self {
     Empty => Empty
     Cons(x, xs) => Cons(f(x), fn () { xs().map(f) })
   }
 }
 
-fn Stream::take[T](self: Stream[T], n: Int) -> List[T] {
+fn[T] Stream::take(self: Stream[T], n: Int) -> List[T] {
   if n == 0 {
-    Nil
+    @list.empty()
   } else {
     match self {
-      Empty => Nil
-      Cons(x, xs) => Cons(x, xs().take(n - 1))
+      Empty => @list.empty()
+      Cons(x, xs) => @list.cons(x, xs().take(n - 1))
     }
   }
 }
@@ -43,7 +43,7 @@ struct LazyRef[T] {
   mut data : LazyData[T]
 }
 
-fn extract[T](self: LazyRef[T]) -> T {
+fn[T] LazyRef::extract(self: LazyRef[T]) -> T {
   match self.data {
     Waiting(thunk) => {
       let value = thunk()
@@ -68,6 +68,6 @@ fn extract[T](self: LazyRef[T]) -> T {
 //   - a built-in function applied to few arguments, e.g., `(+) 2` or `sqrt`.
 //   - a lambda abstraction, e.g., `\x -> expression`
 // 
-fn square(x: LazyRef[Int]) -> Int {
+fn LazyRef::square(x: LazyRef[Int]) -> Int {
   x.extract() * x.extract()
 }
