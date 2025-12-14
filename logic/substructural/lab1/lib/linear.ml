@@ -1,10 +1,11 @@
 (** Linear logic: resources are consumed *)
+open Core
 
 let rec match_premise theta p delta delta' =
   match delta' with
   | [] -> []
   | q :: delta'' ->
-    (match Term.match_ theta p q with
+    (match Term.match_term theta p q with
      | None -> match_premise theta p (delta @ [ q ]) delta''
      | Some theta' ->
        (* consume q *)
@@ -16,18 +17,16 @@ let rec match_premises theta ps delta =
   | [] -> [ theta, delta ]
   | p :: ps' ->
     let mstates1 = match_premise theta p [] delta in
-    List.concat_map (fun (theta', delta') -> match_premises theta' ps' delta') mstates1
+    List.concat_map mstates1 ~f:(fun (theta', delta') -> match_premises theta' ps' delta')
 ;;
 
 let apply_rule (Term.Rule (ps, cs)) state =
   let mstates = match_premises Term.empty ps state in
   let states' =
-    List.map
-      (fun (theta', delta') ->
-         State.merge_multiset
-           (State.sort_multiset (List.map (Term.subst theta') cs))
-           delta')
-      mstates
+    List.map mstates ~f:(fun (theta', delta') ->
+      State.merge_multiset
+        (State.sort_multiset (List.map cs ~f:(Term.subst theta')))
+        delta')
   in
   Federation.sort states'
 ;;
@@ -53,10 +52,10 @@ let rec iterate_rec rules states =
 ;;
 
 let iterate rules states =
-  if not (List.for_all Term.range_restricted rules)
+  if not (List.for_all rules ~f:Term.range_restricted)
   then failwith "rules not range restricted";
   if not (Federation.ground states) then failwith "set of states not ground";
-  let states1 = List.map State.sort_multiset states in
+  let states1 = List.map states ~f:State.sort_multiset in
   let states2 = Federation.sort states1 in
   iterate_rec rules states2
 ;;
@@ -68,7 +67,7 @@ let rec quiesce_rec rules state =
 ;;
 
 let quiesce rules state =
-  if not (List.for_all Term.range_restricted rules)
+  if not (List.for_all rules ~f:Term.range_restricted)
   then failwith "rules not range restricted";
   if not (State.ground state) then failwith "state not ground";
   quiesce_rec rules state

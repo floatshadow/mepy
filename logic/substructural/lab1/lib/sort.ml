@@ -1,4 +1,5 @@
 (** Sorting and merging for multisets and sets *)
+open Core
 
 type order =
   | Lt
@@ -25,7 +26,7 @@ module SortMultiset : SORT = struct
     | x :: xs', y :: ys' ->
       (match cmp x y with
        | Lt -> x :: merge cmp xs' ys
-       | Eq -> x :: merge cmp xs' ys (* x first for stability *)
+       | Eq -> x :: merge cmp xs' ys (* x first, to make sort stable *)
        | Gt -> y :: merge cmp xs ys')
   ;;
 
@@ -41,7 +42,7 @@ module SortMultiset : SORT = struct
     | xss -> sortlists cmp (merge_adjacents cmp xss)
   ;;
 
-  let sort cmp xs = sortlists cmp (List.map (fun x -> [ x ]) xs)
+  let sort cmp xs = sortlists cmp (List.map xs ~f:(fun x -> [ x ]))
 end
 
 (** Set sort: removes duplicates *)
@@ -53,7 +54,7 @@ module SortSet : SORT = struct
     | x :: xs', y :: ys' ->
       (match cmp x y with
        | Lt -> x :: merge cmp xs' ys
-       | Eq -> merge cmp xs ys' (* drop duplicate y *)
+       | Eq -> merge cmp xs ys' (* keep x (first), drop duplicate y *)
        | Gt -> y :: merge cmp xs ys')
   ;;
 
@@ -69,5 +70,5 @@ module SortSet : SORT = struct
     | xss -> sortlists cmp (merge_adjacents cmp xss)
   ;;
 
-  let sort cmp xs = sortlists cmp (List.map (fun x -> [ x ]) xs)
+  let sort cmp xs = sortlists cmp (List.map xs ~f:(fun x -> [ x ]))
 end

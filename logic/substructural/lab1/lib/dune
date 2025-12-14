@@ -1,6 +1,7 @@
 (library
  (name inference)
- (public_name inference))
+ (public_name inference)
+ (libraries core))
 
 (env
  (dev

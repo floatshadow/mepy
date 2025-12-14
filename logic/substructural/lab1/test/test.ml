@@ -124,11 +124,11 @@ module LinearTest = struct
   let table = con0 "table"
   let a = con0 "a"
   let b = con0 "b"
-  let _c = con0 "c"
-  let x_ = var "X"
-  let y_ = var "Y"
-  let pickup = Rule ([ empty; clear x_; on x_ y_ ], [ holds x_; clear y_ ])
-  let putdown = Rule ([ holds x_; clear y_ ], [ empty; clear x_; on x_ y_ ])
+  let c = con0 "c"
+  let x = var "X"
+  let y = var "Y"
+  let pickup = Rule ([ empty; clear x; on x y ], [ holds x; clear y ])
+  let putdown = Rule ([ holds x; clear y ], [ empty; clear x; on x y ])
 
   let test_blocksworld () =
     let s0 = [ [ empty; on b table; on a b; clear a; clear table ] ] in
@@ -194,51 +194,51 @@ module OrderedTest = struct
     print_endline "Vanishing parentheses test passed!"
   ;;
 
-  let t_ = con0 "T"
-  let s_ = con0 "S"
-  let b_ = con0 "<"
-  let e_ = con0 ">"
-  let t1 = Rule ([ l; r ], [ t_ ])
-  let t2 = Rule ([ l; t_; r ], [ t_ ])
-  let t3 = Rule ([ t_; t_ ], [ t_ ])
-  let s0 = Rule ([ b_; e_ ], [ s_ ])
-  let s1 = Rule ([ b_; t_; e_ ], [ s_ ])
+  let t = con0 "T"
+  let s = con0 "S"
+  let b = con0 "<"
+  let e = con0 ">"
+  let t1 = Rule ([ l; r ], [ t ])
+  let t2 = Rule ([ l; t; r ], [ t ])
+  let t3 = Rule ([ t; t ], [ t ])
+  let s0 = Rule ([ b; e ], [ s ])
+  let s1 = Rule ([ b; t; e ], [ s ])
 
   let test_parse () =
-    let p1 = Ordered.iterate [ t1; t2; t3; s0; s1 ] [ [ b_; l; l; r; l; r; r; e_ ] ] in
+    let p1 = Ordered.iterate [ t1; t2; t3; s0; s1 ] [ [ b; l; l; r; l; r; r; e ] ] in
     print_string ("# p1\n" ^ Federation.pp_states p1 ^ "\n");
     let p1_expected =
-      [ [ b_; l; l; r; l; r; r; e_ ]
-      ; [ b_; l; l; r; t_; r; e_ ]
-      ; [ b_; l; t_; l; r; r; e_ ]
-      ; [ b_; l; t_; r; e_ ]
-      ; [ b_; l; t_; t_; r; e_ ]
-      ; [ b_; t_; e_ ]
-      ; [ s_ ]
+      [ [ b; l; l; r; l; r; r; e ]
+      ; [ b; l; l; r; t; r; e ]
+      ; [ b; l; t; l; r; r; e ]
+      ; [ b; l; t; r; e ]
+      ; [ b; l; t; t; r; e ]
+      ; [ b; t; e ]
+      ; [ s ]
       ]
     in
     assert (p1 = p1_expected);
     let p2 =
-      Ordered.iterate [ t1; t2; t3; s0; s1 ] [ [ b_; r; l; l; r; l; r; r; l; e_ ] ]
+      Ordered.iterate [ t1; t2; t3; s0; s1 ] [ [ b; r; l; l; r; l; r; r; l; e ] ]
     in
     print_string ("# p2\n" ^ Federation.pp_states p2 ^ "\n");
     let p2_expected =
-      [ [ b_; r; l; l; r; l; r; r; l; e_ ]
-      ; [ b_; r; l; l; r; t_; r; l; e_ ]
-      ; [ b_; r; l; t_; l; r; r; l; e_ ]
-      ; [ b_; r; l; t_; r; l; e_ ]
-      ; [ b_; r; l; t_; t_; r; l; e_ ]
-      ; [ b_; r; t_; l; e_ ]
+      [ [ b; r; l; l; r; l; r; r; l; e ]
+      ; [ b; r; l; l; r; t; r; l; e ]
+      ; [ b; r; l; t; l; r; r; l; e ]
+      ; [ b; r; l; t; r; l; e ]
+      ; [ b; r; l; t; t; r; l; e ]
+      ; [ b; r; t; l; e ]
       ]
     in
     assert (p2 = p2_expected);
-    let p3 = Ordered.quiesce [ t1; t2; t3; s0; s1 ] [ b_; l; l; r; l; r; r; e_ ] in
+    let p3 = Ordered.quiesce [ t1; t2; t3; s0; s1 ] [ b; l; l; r; l; r; r; e ] in
     print_string ("# p3: " ^ Federation.pp_state p3 ^ "\n");
-    let p3_expected = [ s_ ] in
+    let p3_expected = [ s ] in
     assert (p3 = p3_expected);
-    let p4 = Ordered.quiesce [ t1; t2; t3; s0; s1 ] [ b_; r; l; l; r; l; r; r; l; e_ ] in
+    let p4 = Ordered.quiesce [ t1; t2; t3; s0; s1 ] [ b; r; l; l; r; l; r; r; l; e ] in
     print_string ("# p4: " ^ Federation.pp_state p4 ^ "\n");
-    let p4_expected = [ b_; r; t_; l; e_ ] in
+    let p4_expected = [ b; r; t; l; e ] in
     assert (p4 = p4_expected);
     print_endline "Parsing example passed!"
   ;;

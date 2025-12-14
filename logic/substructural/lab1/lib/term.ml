@@ -1,4 +1,5 @@
 (** Terms, substitutions, and inference rules *)
+open Core
 
 type var = string
 type const = string
@@ -8,7 +9,7 @@ type term =
   | Var of var
 
 let rec ground = function
-  | Con (_, ts) -> List.for_all ground ts
+  | Con (_, ts) -> List.for_all ~f:ground ts
   | Var _ -> false
 ;;
 
@@ -52,32 +53,34 @@ let empty : subst = []
 
 let rec subst theta t =
   match t with
-  | Con (f, ts) -> Con (f, List.map (subst theta) ts)
+  | Con (f, ts) -> Con (f, List.map ~f:(subst theta) ts)
   | Var y ->
-    (match List.assoc_opt y theta with
+    (match List.Assoc.find theta y ~equal:String.equal with
      | Some t' -> t'
      | None -> failwith ("undefined variable " ^ y))
 ;;
 
-let subst_var theta y = List.assoc_opt y theta
+let subst_var theta y = List.Assoc.find theta y ~equal:String.equal
 
 (** match theta t s = Some theta' extending theta with subst theta' t = s
     requires s ground *)
-let rec match_ theta t s =
+let rec match_term (theta : subst) t s =
+  assert (ground s);
   match t, s with
   | Var x, (Con _ as s') ->
     (match subst_var theta x with
-     | Some t' -> match_ theta t' s'
+     | Some t' -> match_term theta t' s'
      | None -> Some ((x, s') :: theta))
-  | Con (f, ts), Con (g, ss) -> if f = g then match_list theta ts ss else None
+  | Con (f, ts), Con (g, ss) ->
+    if String.(f = g) then match_term_list theta ts ss else None
   | _ -> None
 
-and match_list theta ts ss =
+and match_term_list (theta : subst) ts ss =
   match ts, ss with
   | [], [] -> Some theta
   | t :: ts', s :: ss' ->
-    (match match_ theta t s with
-     | Some theta' -> match_list theta' ts' ss'
+    (match match_term theta t s with
+     | Some theta' -> match_term_list theta' ts' ss'
      | None -> None)
   | _ -> None
 ;;
@@ -87,19 +90,19 @@ type rule = Rule of term list * term list
 
 let rec occurs_in t x =
   match t with
-  | Var y -> x = y
+  | Var y -> String.(x = y)
   | Con (_, ts) -> occurs_in_list ts x
 
-and occurs_in_list ts x = List.exists (fun t -> occurs_in t x) ts
+and occurs_in_list ts x = List.exists ~f:(fun t -> occurs_in t x) ts
 
 let rec rr premises t =
   match t with
   | Var x -> occurs_in_list premises x
-  | Con (_, ss) -> List.for_all (rr premises) ss
+  | Con (_, ss) -> List.for_all ~f:(rr premises) ss
 ;;
 
 (** range_restricted (Rule(premises, conclusions)) = true
     iff every variable in conclusions occurs in at least one premise *)
 let range_restricted (Rule (premises, conclusions)) =
-  List.for_all (rr premises) conclusions
+  List.for_all ~f:(rr premises) conclusions
 ;;

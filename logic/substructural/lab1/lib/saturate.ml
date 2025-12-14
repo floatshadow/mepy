@@ -1,20 +1,23 @@
 (** Saturation for persistent (classical) logic *)
+open Core
 
-let match_pat theta p gamma = List.filter_map (fun q -> Term.match_ theta p q) gamma
+let match_pat theta p gamma =
+  List.filter_map gamma ~f:(fun q -> Term.match_term theta p q)
+;;
 
 let rec match_pats theta ps gamma =
   match ps with
   | [] -> [ theta ]
   | p :: ps' ->
     let thetas = match_pat theta p gamma in
-    List.concat_map (fun theta' -> match_pats theta' ps' gamma) thetas
+    List.concat_map thetas ~f:(fun theta' -> match_pats theta' ps' gamma)
 ;;
 
 let rec apply_merge thetas cs gamma =
   match thetas with
   | [] -> gamma
   | theta :: thetas' ->
-    let theta_cs = State.sort_set (List.map (Term.subst theta) cs) in
+    let theta_cs = State.sort_set (List.map cs ~f:(Term.subst theta)) in
     let gamma' = State.merge_set theta_cs gamma in
     apply_merge thetas' cs gamma'
 ;;
@@ -39,7 +42,7 @@ let rec naive rules gamma =
 ;;
 
 let saturate rules gamma =
-  if not (List.for_all Term.range_restricted rules)
+  if not (List.for_all rules ~f:Term.range_restricted)
   then failwith "rules not range restricted";
   if not (State.ground gamma) then failwith "state not ground";
   naive rules (State.sort_set gamma)

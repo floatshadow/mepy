@@ -1,6 +1,12 @@
 (executable
- (public_name lab1)
- (name top)
+ (public_name lec1)
+ (name lec1)
+ (libraries inference)
+ (modes byte))
+
+(executable
+ (public_name hw1)
+ (name hw1)
  (libraries inference)
  (modes byte))
 

@@ -5,7 +5,7 @@ let rec match_here theta ps omega_l omega_r =
   | [], _ -> [ omega_l, theta, omega_r ]
   | _ :: _, [] -> []
   | p :: ps', q :: omega_r' ->
-    (match Term.match_ theta p q with
+    (match Term.match_term theta p q with
      | None -> []
      | Some theta' -> match_here theta' ps' omega_l omega_r')
 ;;

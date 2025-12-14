@@ -33,7 +33,7 @@ let rule_D = Rule ([ dime ], [ nickel; nickel ])
 let rule_Dinv = Rule ([ nickel; nickel ], [ dime ])
 let coin_rules = [ rule_Q; rule_Qinv; rule_D; rule_Dinv ]
 
-let run2() =
+let run2 () =
   let ex2_init = [ quarter; nickel ] in
   Format.printf "init:@.%s@." (Federation.pp_state ex2_init);
   let ex2_finals = Linear.iterate coin_rules [ ex2_init ] in
@@ -56,7 +56,7 @@ let rule_pickup = Rule ([ empty; clear x; on x y ], [ holds x; clear y ])
 let rule_putdown = Rule ([ holds x; clear y ], [ empty; clear x; on x y ])
 let blocks_rules = [ rule_pickup; rule_putdown ]
 
-let run3() =
+let run3 () =
   let ex3_init = [ empty; clear a; on a b; on b table; clear table ] in
   Format.printf "init:@.%s@." (Federation.pp_state ex3_init);
   let ex3_finals = Linear.iterate blocks_rules [ ex3_init ] in
