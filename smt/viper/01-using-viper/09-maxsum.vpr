@@ -16,9 +16,22 @@
     requires true 
     ensures sum == x + y
     ensures (x >= y ==> max == x) && (x < y ==> max == y)
+{
+    sum := x + y
+    if (x >= y) {
+        max := x
+    } else {
+        max := y
+    }
+}
 
 method test() 
 {
+    var s: Int
+    var m: Int
+    s, m := maxSum(1723, 42)
+    assert s == 1765
+    assert m == 1723
 }
 
 /*
@@ -34,7 +47,21 @@ method test()
  */
 
 method reconstructMaxSum(sum: Int, max: Int) returns (x: Int, y: Int)
+    requires sum - max <= max // otherwise: Postcondition of reconstructMaxSum might not hold. Assertion x <= max might not hold. 
+    ensures x + y == sum
+    ensures (x == max || y == max) && (x <= max) && (y <= max)
+
+{
+    x := sum - max
+    y := max
+}
 
 method testReconstruction(x: Int, y: Int) {
-
+    var s: Int
+    var m: Int
+    var rx: Int
+    var ry: Int
+    s,m := maxSum(x, y)
+    rx,ry := reconstructMaxSum(s, m)
+    assert (rx == x && ry == y) || (rx == y && ry == x)
 }

@@ -1,4 +1,5 @@
 method triple(x: Int) returns (r: Int)
+   requires x % 2 == 0
    ensures r == 3 * x
 { 
     r := x / 2
@@ -7,6 +8,8 @@ method triple(x: Int) returns (r: Int)
 
 method client() {
   var z: Int
-  z := triple(7)
-  assert z == 21
+  // Assertion x % 2 == 0 might not hold.
+  // z := triple(7)
+  z := triple(6)
+  assert z == 18
 }

@@ -4,4 +4,14 @@ method triple(x: Int) returns (r: Int)
 
 
 method isqrt(x: Int) returns (r: Int)
-  // TODO
+  requires x >= 0
+  ensures x >= r * r
+  ensures x < (r+1) * (r+1)
+
+method foo(a: Int) returns (b: Int)
+  requires a > 0
+  ensures b > a
+{
+  b := isqrt(a)
+  b := triple(a)
+}
