@@ -1,0 +1,18 @@
+opam-version: "2.0"
+name: "systemk"
+synopsis: "A Rocq formalization of normal modal logic K"
+description: """
+Hilbert-style modal system K, Kripke semantics, and soundness.
+"""
+maintainer: "zsy"
+authors: ["zsy"]
+
+depends: [
+  "coq" {= "9.1.1"}
+  "dune" {>= "3.21.0"}
+]
+
+build: [
+  ["dune" "subst"] {pinned}
+  ["dune" "build" "-p" name "-j" jobs]
+]

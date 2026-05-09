@@ -3,3 +3,6 @@
 
 # Settings
 .vscode/
+
+# Agents
+.serena

@@ -1,0 +1,11 @@
+(rocq.theory
+ (name SystemK)
+ (synopsis "Normal modal logic K")
+ (modules :standard)
+ (flags :standard -w -notation-overridden
+     -w -ambiguous-paths
+     -w -redundant-canonical-projection
+     -w -unknown-warning
+     -w -argument-scope-delimiter
+     -w -notation-incompatible-prefix)
+ (theories Stdlib))

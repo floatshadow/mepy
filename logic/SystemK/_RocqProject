@@ -1,0 +1,16 @@
+-Q theories SystemK
+
+-arg -w
+-arg -notation-overridden
+-arg -w
+-arg -ambiguous-paths
+-arg -w
+-arg -redundant-canonical-projection
+-arg -w
+-arg -unknown-warning
+-arg -w
+-arg -argument-scope-delimiter
+-arg -w
+-arg -notation-incompatible-prefix
+
+theories/ModalK.v
