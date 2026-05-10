@@ -1,4 +1,4 @@
--Q theories SystemK
+-Q theories ModalLogic
 
 -arg -w
 -arg -notation-overridden
@@ -14,3 +14,4 @@
 -arg -notation-incompatible-prefix
 
 theories/ModalK.v
+theories/ModalD.v

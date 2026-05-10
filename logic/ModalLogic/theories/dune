@@ -1,6 +1,6 @@
 (rocq.theory
- (name SystemK)
- (synopsis "Normal modal logic K")
+ (name ModalLogic)
+ (synopsis "Normal modal logics K and D")
  (modules :standard)
  (flags :standard -w -notation-overridden
      -w -ambiguous-paths

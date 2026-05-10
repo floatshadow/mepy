@@ -1,11 +1,11 @@
 opam-version: "2.0"
-name: "systemk"
-synopsis: "A Rocq formalization of normal modal logic K"
+name: "modal-logic"
+synopsis: "A Rocq formalization of normal modal logics"
 description: """
-Hilbert-style modal system K, Kripke semantics, and soundness.
+Hilbert-style normal modal logics in Rocq.
 """
-maintainer: "zsy"
-authors: ["zsy"]
+maintainer: "floatshadow"
+authors: ["floatshadow"]
 
 depends: [
   "coq" {= "9.1.1"}
