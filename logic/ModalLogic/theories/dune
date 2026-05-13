@@ -1,6 +1,6 @@
 (rocq.theory
  (name ModalLogic)
- (synopsis "Normal modal logics K and D")
+ (synopsis "Normal modal logics")
  (modules :standard)
  (flags :standard -w -notation-overridden
      -w -ambiguous-paths
