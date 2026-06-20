@@ -1,0 +1,103 @@
+---
+name: ocaml-style
+description: >-
+  Write, edit, review, or refactor OCaml to match a coding style. Use whenever creating or changing any `.ml`, `.mli` file,  
+  especially writing compiler projects (e.g., parser, AST, typechecker, IR, evaluator, pretty-printer, codegen) — 
+  even when the user only do minor code changes without mentioning style. Apply before introducing new module, data types,
+  error handling, or signature so new code follows local conventions, not generic OCaml defaults.
+paths:
+  - "**/*.ml"
+  - "**/*.mli"
+  - "**/dune"
+  - "**/dune-project"
+  - "**/.ocamlformat"
+---
+
+# OCaml House Style
+
+Make new and edited OCaml read as though the same person who wrote the
+surrounding code wrote it. This repo has consistent, opinionated idioms; the
+goal is to fit them, not to import generic OCaml advice.
+
+The detailed description with examples lives in `references/style-spec.md`. 
+**Read the report whenever a decision is nontrivial** — picking an error channel,
+designing an abstraction boundary, adding a node to a core tree type, etc.
+
+## Core conventions (the ones that matter most)
+
+- **Modules** are `CamelCase`, one per file. **Types, values, fields** are
+  `snake_case`. Group source files by *role* in subdirectories, but expect them
+  to share one flat library namespace.
+- **Constructors** are `CamelCase`, and when a type has several related families
+  they take a short category prefix so they read at a glance (e.g. pattern nodes
+  `P…`, type nodes `T…`, bindings `B…`). Follow whatever prefix the type already
+  uses.
+- **Name by role, precisely:** `pp_*` returns a pretty-printer document,
+  `string_of_*` returns a string, `new_*` or `mk_` is a smart constructor that establishes
+  invariants. Suffixes are load-bearing: `_exn` raises, `_opt` returns `option`,
+  `_unsafe` skips invariant checks for speed. Don't attach these suffixes to
+  functions that don't have the matching behavior.
+- **Pretty-print with `PPrint`, never string concatenation or sprintf** — we prefer 
+  generate PPrint's document through `pp_*` and `PPrint.ToChannel.pretty` to print.
+- **Errors:** - Default channel is **exceptions / `failwith`**, with messages built via string
+  interpolation: `failwith [%string "type %{name} not defined"]` especially when error kinds / messages are too many to fit in with custom exceptions.
+  Use named exception for application/library custom exception names,
+  `Stdlib.Printexc.register_printer` to register custom exception printers; use `Location.register_error_of_exn` instead for compiler frontend, ppx, diagnostics tied to source spans.
+  Use `option` for *expected* absence, and `assert` for internal
+  invariants (with a comment explaining the invariant). Don't thread `result`
+  plumbing through a module that uses exceptions. 
+- **Abstraction lives inside `.ml` files**, not in separate `.mli`s (there are
+  effectively none here). Hide internals with an inline sealed
+  `module M : sig … end = struct … end`; use a generative `Make () : sig … end`
+  functor when a module needs fresh mutable state; offer interchangeable
+  implementations via a `module type` plus conforming modules, selected at
+  runtime with first-class modules and `(val …)` when needed.
+- **Comment the why.** Note invariants, special cases, and `NOTE:` caveats. Long
+  design rationale belongs in the project's docs, linked from the source by
+  anchor — match that split rather than writing an essay in a comment.
+
+## Mind the inconsistencies (don't "fix" them globally)
+
+- Always use `Core` standard-library dialect which prefers the labelled API e.g. `List.map ~f:`.
+- `[@@deriving …]` is used sparingly — don't assume a type derives anything.
+- Function length is not capped. Large functions are fine *when* structured as
+  named local helpers plus a small driver.
+- Dev builds set `-warn-error -A`, so the compiler will **not** error on a missing
+  match arm or unused `rec`.
+
+## Checklist before editing
+
+Run through this before writing any OCaml:
+
+1. Find the nearest sibling that does something similar and mirror its shape
+   (naming, helper extraction, error channel, printer structure).
+2. Identify the error channel already in use in this module and stay on it.
+3. Know how you'll print/format the result (`PPrint`, width 80) before you start.
+
+## When adding a new module
+
+- Put it in the subdirectory matching its role and add it to the `(modules …)`
+  list in the relevant `dune` file (the module list is explicit).
+- Pick the standard-library dialect of its closest neighbours and commit to it
+  for the whole file.
+- Default to **no `.mli`**. Express the public surface with an inline sealed
+  `sig` if you need to hide internals.
+- For a family of interchangeable implementations, define a `module type` named
+  for its role and make each implementation conform; add a `Make` functor if the
+  interface is the integration point.
+- Provide `pp_*` (and `string_of_*` if useful) for any type that needs
+  inspection, using `PPrint`.
+
+## When modifying existing code
+
+- Preserve the local idiom over your personal preference, including the dialect,
+  helper conventions, and error channel of the file.
+- Keep exhaustive matches exhaustive: when adding a constructor, update every
+  match/accessor/map over the type. Close impossible cases with `failwith "…"`
+  or `assert false`, not a silent catch-all.
+- Keep large functions structured as local-helpers-plus-driver — add a named
+  local helper instead of nesting one more `match`.
+- Don't break `{ record with … }` update sites; keep any placeholder fields that
+  exist to make record-update legal.
+- Make the change the task needs; don't reformat or restyle untouched code.
+
