@@ -1,0 +1,101 @@
+// Direct Viper IVL encoding of an AARA resource proof for ML append:
+//
+//   let rec append (xs, ys) =
+//     match xs with
+//     | [] ->
+//         tick(1.0);
+//         ys
+//     | x :: xs' ->
+//         tick(2.0);
+//         let ys' = append (xs', ys) in
+//         x :: ys'
+//
+// Seq[Int] represents ML lists.  The ghost integer credit is the available
+// resource.  The contract checks the exact bound 2 * |xs| + 1
+//
+// This file is intentionally a proof-checking translation of a fixed AARA
+// annotation, not an inference engine.
+
+function listBasePotential(xs: Seq[Int]): Int
+{
+  |xs|
+}
+
+method consume(amount: Int, credit: Int)
+  returns (credit2: Int)
+  requires amount >= 0
+  requires credit >= amount
+  ensures credit2 == credit - amount
+  ensures credit2 >= 0
+{
+  credit2 := credit - amount
+}
+
+method append(xs: Seq[Int], ys: Seq[Int], credit: Int)
+  returns (zs: Seq[Int], credit2: Int)
+  requires credit >= 2 * listBasePotential(xs) + 1
+  // functional correctness
+  ensures zs == xs ++ ys
+  // resource correctness
+  ensures credit - credit2 <= (2 * listBasePotential(xs) + 1)
+  ensures credit2 >= 0
+{
+  if (|xs| == 0) {
+    // [] branch: tick(1.0); ys
+    assert xs == Seq[Int]()
+    assert 2 * listBasePotential(xs) + 1 == 1
+
+    credit2 := consume(1, credit)
+    zs := ys
+
+    assert zs == xs ++ ys
+    assert credit - credit2 <= (2 * listBasePotential(xs) + 1)
+  } else {
+    // x :: xs' branch: tick(2.0); append(xs', ys); x :: ys'
+    assert |xs| > 0
+
+    var x: Int := xs[0]
+    var xsTail: Seq[Int] := xs[1..]
+    var tailPotential: Int := 2 * listBasePotential(xsTail)
+
+    assert xs == Seq(x) ++ xsTail
+    assert |xsTail| == |xs| - 1
+    assert 2 * listBasePotential(xs) + 1 == 2 + (2 * listBasePotential(xsTail) + 1)
+
+    credit2 := consume(2, credit)
+    assert credit2 >= 2 * listBasePotential(xsTail) + 1
+
+    var ysPrime: Seq[Int]
+    var creditAfterRec: Int
+    ysPrime, creditAfterRec := append(xsTail, ys, credit2)
+
+    assert ysPrime == xsTail ++ ys
+    zs := Seq(x) ++ ysPrime
+    credit2 := creditAfterRec
+
+    assert zs == Seq(x) ++ (xsTail ++ ys)
+    assert zs == xs ++ ys
+    assert credit - credit2 <= (2 * listBasePotential(xs) + 1)
+  }
+}
+
+method exactBoundClient()
+{
+  var out: Seq[Int]
+  var remaining: Int
+  out, remaining := append(Seq(1, 2), Seq(3), 2 * listBasePotential(Seq(1, 2)) + 1)
+
+  assert out == Seq(1, 2, 3)
+  assert remaining >= 0
+}
+
+method extraCreditClient(extra: Int)
+  requires extra >= 0
+{
+  var out: Seq[Int]
+  var remaining: Int
+  out, remaining := append(Seq(1, 2), Seq(3), (2 * listBasePotential(Seq(1, 2)) + 1) + extra)
+
+  assert out == Seq(1, 2, 3)
+  assert remaining >= extra
+}
