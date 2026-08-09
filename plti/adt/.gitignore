@@ -1,0 +1,5 @@
+/target/
+/tmp/
+/content
+/internal.md
+.DS_Store
