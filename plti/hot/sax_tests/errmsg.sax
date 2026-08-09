@@ -1,0 +1,238 @@
+/* error messages from type checker */
+
+type bool = +{'true : 1, 'false : 1}
+type bin = +{'b0 : bin, 'b1 : bin, 'e : 1}
+type trie = +{'leaf : 1, 'node :  trie * bool * trie}
+
+// var not bound
+fail
+proc neg (d : bool) (x : bool) =
+  read x {
+  | 'true(u) => write d 'false(v)
+  | 'false(u) => write d 'true(v)
+  }
+
+// branch not match sum type
+fail
+proc neg (d : bool) (x : bool) =
+  read x {
+  | 'true(u) => write d 'false(u)
+  | () => cut u : 1
+            write u ()
+          write d 'true(u)
+  }
+
+// branch not match sum type
+fail
+proc neg (d : bool) (x : bool) =
+  read x {
+  | 'true(u) => write d 'false(u)
+  | (v, w) => cut u : 1
+                write u ()
+              write d 'true(u)
+  }
+
+// no branch matching label 'false
+fail
+proc neg (d : bool) (x : bool) =
+  read x {
+  | 'true(u) => write d 'false(u)
+  }
+
+// branch not matching type 1
+fail
+proc copy_one (d : 1) (x : 1) =
+  read x {
+  | (y, z) => write d ()
+  }
+
+// extraneous branch in pattern match
+fail
+proc copy_one (d : 1) (x : 1) =
+  read x {
+  | () => write d ()
+  | () => write d ()
+  }
+
+// extraneous branch in pattern match
+fail
+proc neg (d : bool) (x : bool) =
+  read x {
+  | 'true(u) => write d 'false(u)
+  | 'false(u) => write d 'true(u)
+  | 'true(u) => write d 'false(u)
+  }
+
+// branch not matching type A * B
+fail
+proc copy1 (d : list) (l : list) =
+  read l {
+  | 'nil(u) => write d 'nil(u)
+  | 'cons(p) => read p ()
+                cut u : 1
+                  write u ()
+                write d 'nil(u)
+  }
+
+// small value does not match type bin * bin
+fail
+proc write_pair (d : bin * bin) (x : bin) (y : bin) =
+  write d ()
+
+// 'b00 not an alternative of the sum type 'bin
+fail
+proc write_inj (d : bin) (x : bin) =
+  write d 'b00(x)
+
+// x1 not used
+fail
+proc inc (d : bin) (x : bin) (y : bin) =
+  read x {
+  | 'b0(x1) => write d 'b0(x1)
+  | 'b1(x1) => write d 'b1(y)
+  | 'e(u) => write d 'e(u)
+  }
+
+proc dealloc (d : 1) (x : bin) =
+  read x {
+  | 'b0(x1) => call dealloc d x1
+  | 'b1(x1) => call dealloc d x1
+  | 'e(u) => id d u
+  }
+
+// y used in one branch but not another
+fail
+proc inc (d : bin) (x : bin) (y : bin) =
+  read x {
+  | 'b0(x1) => write d 'b0(x1)
+  | 'b1(x1) => cut u : 1
+                 call dealloc u x1
+               read u ()
+               write d 'b1(y)
+  | 'e(u) => write d 'e(u)
+  }
+
+// variable y not used
+fail
+proc cp1 (d : bin) (x : bin) (y : bin) =
+  id d x
+
+type std = +{'b0 : pos, 'b1 : std, 'e : 1}
+type pos = +{'b0 : pos, 'b1 : std        }
+
+proc std_pos (d : std) (x : pos) =
+  id d x
+
+fail
+proc pos_std (d : pos) (x : std) =
+  id d x
+
+fail
+proc std$pos_std$std (d : std * pos) (x : std) (y : std) =
+  write d (x, y)
+
+fail
+proc pos_zero (d : pos) =
+  cut u : 1
+    write u ()
+  write d 'e(u)
+
+// extraneous arguments
+fail
+proc too_many (d : std) (x : pos) (y : pos) =
+  call std_pos d x y
+
+// missing arguments
+fail
+proc too_few (d : std) =
+  call std_pos d
+  
+// extraneous branch
+fail
+proc extraneous (d : std) (p : pos) =
+  read p {
+  | 'b0(x) => write d 'b0(x)
+  | 'b1(x) => write d 'b1(x)
+  | 'e(u) => write d 'e(u)
+  }
+
+// cannot read from destination
+fail
+proc cannot_read_from_dest (d : bin) =
+  read d {
+  | 'b0(x) => id d x
+  | 'b1(x) => id d x
+  | 'e(u) => write d 'e(u)
+  }
+
+// cannot write
+fail
+proc cannot_write (d : bin) (x : bin) =
+  write x 'b0(d)
+
+// cannot cut with existing destination
+fail
+proc cannot_cut (d : bin) =
+  cut d : 1
+    write d ()
+  read d ()
+  cut u : 1
+    write u ()
+  write d 'e(u)
+
+// destination of of identity must be ..
+fail
+proc identity1 (d : bin) (x : bin) =
+  id x d
+
+// source of identity cannot be destination
+fail
+proc identity2 (d : bin) =
+  id d d
+
+// destination of call must be
+fail
+proc call1 (d : 1) (x : bin) =
+  call dealloc x x
+
+// type of destination incorrect
+fail
+proc call2 (d : bin) (x : bin) =
+  call dealloc d x
+
+// proc undefined
+fail
+proc call3 (d : bin) (x : bin) =
+  call copy_over d x
+
+// parameters with the same name
+fail
+proc call4 (d : bin) (x : bin) (x : bin) =
+  id d x
+
+// parameter equal to destination
+fail
+proc call5 (d : bin) (d : bin) =
+  id d d
+
+// shadowing destination
+fail
+proc f (d : 1) (x : bool) =
+  read x {
+  | 'true(d) => cut u : 1 id u d id d u
+  | 'false(d) => cut u : 1 id u d id d u
+  }
+
+fail
+proc g (d : 1) (x : 1 * 1) =
+  read x (d, y)
+  read d ()
+  id d y
+
+type nat = +{'zero : 1, 'succ : nat}
+
+fail
+proc shadow_source (d : nat) (l : nat) =
+  cut l : nat
+    write l 'succ(l)
+  id d l

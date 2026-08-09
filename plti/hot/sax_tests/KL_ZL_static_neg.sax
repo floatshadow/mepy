@@ -1,0 +1,45 @@
+// Multiple procedure definitions
+type bin = +{'b0 : bin, 'b1 : bin, 'e : 1}
+
+proc zero (d : bin) =
+  cut u : 1
+    write u ()
+  write d 'e(u)
+
+type nat = +{'zero : 1, 'succ : nat}
+
+// redeclared process
+fail proc zero (d : bin) =
+  cut u : 1
+     write u ()
+  write d 'zero(u)
+
+// Unused shadow value
+type bool = +{'false : 1, 'true : 1}
+fail proc unused_shadow (d : 1) (x: bool) (y : bool) =
+       read x {
+       | 'false(y) => id d y
+       | 'true(y) => id d y
+       }
+
+// pairwise distinct
+fail proc pair_distinct (d : 1) (d: bool) =
+       read x {
+       | 'false(y) => id d y
+       | 'true(y) => id d y
+       }
+
+// pairwise distinct
+fail proc pair_distinct (d : 1) (x: bool) (x : bool) =
+       read x {
+       | 'false(y) => id d y
+       | 'true(y) => id d y
+       }
+
+// reused labels
+fail proc reused_labels (d : 1) (x: bool) =
+       read x {
+       | 'false(y) => id d y
+       | 'false(y) => id d y
+       | 'true(y) => id d y
+       }

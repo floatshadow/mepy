@@ -1,0 +1,69 @@
+type bin = +{'b0 : bin, 'b1 : bin, 'e : 1}
+type bool = +{'false : 1, 'true : 1}
+
+proc false (d : bool) =
+     cut w : 1
+         write w ()
+     write d 'false(w)
+
+proc true (d : bool) =
+     cut w : 1
+         write w ()
+     write d 'true(w)
+
+proc dealloc_bin (d : 1) (x : bin) =
+     read x {
+     | 'b0(x0) => call dealloc_bin d x0
+     | 'b1(x1) => call dealloc_bin d x1
+     | 'e(u) => id d u
+     }
+
+
+/* 'e case for y uses the same id as 'e case for x, so only one is read */
+fail proc bad_equality_check (d : bool) (x : bin) (y : bin) =
+     read x {
+     | 'b0(x0) => read y {
+                  | 'b0(y0) => call bad_equality_check d x0 y0
+                  | 'b1(y1) => cut w0 : 1
+                                   call dealloc_bin w0 x0
+                               cut w1 : 1
+                                   call dealloc_bin w1 y1
+                               read w0 ()
+                               read w1 ()
+                               call false d
+                  | 'e(u)   => cut w0 : 1
+                                    call dealloc_bin w0 x0
+                               read w0 ()
+                               read u ()
+                               call false d
+                  }
+     | 'b1(x1) => read y {
+                  | 'b0(y0) => cut w0 : 1
+                                   call dealloc_bin w0 y0
+                               cut w1 : 1
+                                   call dealloc_bin w1 x1
+                               read w0 ()
+                               read w1 ()
+                               call false d
+                  | 'b1(y1) => call bad_equality_check d x1 y1
+                  | 'e(u)   => cut w1 : 1
+                                   call dealloc_bin w1 x1
+                               read w1 ()
+                               read u ()
+                               call false d
+                  }
+     | 'e(u)   => read y {
+                  | 'b0(y0) => cut w0 : 1
+                                   call dealloc_bin w0 y0
+                               read w0 ()
+                               read u ()
+                               call false d
+                  | 'b1(y1) => cut w1 : 1
+                                   call dealloc_bin w1 y1
+                               read w1 ()
+                               read u ()
+                               call false d
+                  | 'e(u)   => read u ()
+                               call true d
+                  }
+     }

@@ -1,0 +1,19 @@
+// should not work, calls undefined process
+
+proc definedOne (d : 1) (u : 1) =
+    id d u
+
+proc definedTwo (d : 1) (u : 1) =
+    id d u
+
+proc definedThree (d : 1) (u : 1) =
+    id d u
+
+proc definedFour (d : 1) (u : 1) =
+    id d u
+
+proc definedFive (d : 1) (u : 1) =
+    id d u
+
+fail proc prank (d : 1) (u : 1) =
+    call definedSix d u

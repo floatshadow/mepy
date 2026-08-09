@@ -1,0 +1,87 @@
+type nat = +{ 'zero : 1, 'succ : nat }
+
+type bool = +{ 'true : 1, 'false : 1 }
+
+proc zero (d : nat) =
+  cut u : 1
+    write u ()
+    write d 'zero(u)
+
+proc succ (d : nat) (n : nat) =
+  write d 'succ(n)
+
+proc one (d : nat) =
+  cut z : nat
+    call zero z
+    call succ d z
+
+proc add (d : nat) (a : nat) (b : nat) =
+  read b {
+  | 'zero(u) => read u ()
+                  id d a
+  | 'succ(s) => cut x : nat
+                  call add x a s
+                  call succ d x
+  }
+
+proc two (d : nat) =
+  cut one1 : nat
+    call one one1
+    cut one2 : nat
+      call one one2
+      call add d one1 one2
+
+proc three (d : nat) =
+  cut t : nat
+    call two t
+    call succ d t
+
+proc dealloc_nat (d : 1) (n : nat) =
+  read n {
+  | 'zero(u) => id d u
+  | 'succ(s) => call dealloc_nat d s
+  }
+
+proc dup_nat (d : nat * nat) (n : nat) =
+  read n {
+  | 'zero(u) => cut z1 : nat
+                  write z1 'zero(u)
+                  cut z2 : nat
+                    call zero z2
+                    write d (z1, z2)
+  | 'succ(s) => cut ss : nat * nat
+                  call dup_nat ss s
+                  read ss (s1, s2)
+                    cut d1 : nat
+                      call succ d1 s1
+                      cut d2 : nat
+                        call succ d2 s2
+                        write d (d1, d2)
+  }
+
+proc is_even (d : bool) (n : nat) =
+  read n {
+  | 'zero(u) => write d 'true(u)
+  | 'succ(n1) => call is_odd d n1
+  }
+
+proc is_odd (d : bool) (n : nat) =
+  read n {
+  | 'zero(u) => write d 'false(u)
+  | 'succ(n1) => call is_even d n1
+  }
+
+proc one_even (d : bool) =
+  cut one : nat
+    call one one
+    call is_even d one
+
+proc two_even (d : bool) =
+  cut two : nat
+    call two two
+    call is_even d two
+
+proc three_even (d : bool) =
+  cut three : nat
+    call three three
+    call is_even d three

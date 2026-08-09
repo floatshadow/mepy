@@ -1,0 +1,73 @@
+
+type nat = +{'zero : 1, 'succ : nat}
+
+proc plus (d : nat) (a : nat) (b : nat) = 
+    read a {
+        | 'zero(a) => 
+                read a () 
+                id d b
+        | 'succ(a) =>
+            cut d2 : nat
+                call plus d2 a b
+            write d 'succ(d2)
+    }
+
+proc nat_duplicate (d : nat * nat) (a : nat) =
+    read a {
+        | 'zero(a) => 
+            cut d1 : nat
+                cut u1 : 1
+                    write u1 ()
+                write d1 'zero(u1)
+            cut d2 : nat
+                write d2 'zero(a)
+            write d (d1, d2)
+        | 'succ(a) =>
+            cut dt : nat * nat 
+                call nat_duplicate dt a
+            read dt (dt1, dt2)
+            cut d1 : nat
+                write d1 'succ(dt1)
+            cut d2 : nat
+                write d2 'succ(dt2)
+            write d (d1, d2)
+    }
+
+proc zero (d : nat) =
+    cut u : 1
+        write u ()
+    write d 'zero(u)
+
+proc one (d : nat) =
+    cut u : nat
+        call zero u
+    write d 'succ(u)
+
+proc two (d : nat) =
+    cut u : nat
+        call one u
+    cut uu : nat * nat
+        call nat_duplicate uu u
+    read uu (u1, u2)
+    call plus d u1 u2
+
+
+fail proc plus (d : nat) (a : nat) (b : nat) = 
+    read a {
+        | 'zero(a) => 
+                id d b
+        | 'succ(a) =>
+            cut d2 : nat
+                call plus d2 a b
+            write d 'succ(d2)
+    }
+
+fail proc plus (d : nat) (a : nat) (b : nat) = 
+    read a {
+        | 'zero(a) => 
+                write d 'b(x)
+        | 'succ(a) =>
+            cut d2 : nat
+                call plus d2 a b
+            write d 'succ(d2)
+    }

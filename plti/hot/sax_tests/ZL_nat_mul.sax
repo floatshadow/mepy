@@ -1,0 +1,89 @@
+type nat = +{ 'zero: 1, 'suc: nat }
+type bool = +{ 'false: 1, 'true: 1 }
+
+proc const_zero (out : nat) =
+    cut unit : 1
+        write unit ()
+    write out 'zero(unit)
+
+proc const_one (out : nat) =
+    cut zero : nat
+        call const_zero zero
+    write out 'suc(zero)
+
+proc add (out : nat) (a : nat) (b : nat) =
+    read a {
+        | 'zero(unit) =>
+            read unit ()
+            id out b
+        | 'suc(a_prev) =>
+            cut tmp : nat
+                call add tmp a_prev b
+            write out 'suc(tmp)
+    }
+
+proc copy (out : nat * nat) (in : nat) =
+    read in {
+        | 'zero(unit) =>
+            read unit ()
+            cut a : nat call const_zero a
+            cut b : nat call const_zero b
+            write out (a, b)
+
+        | 'suc(in_prev) =>
+            cut tmp : nat * nat
+                call copy tmp in_prev
+            read tmp (a, b)
+            cut a_suc : nat write a_suc 'suc(a)
+            cut b_suc : nat write b_suc 'suc(b)
+            write out (a_suc, b_suc)
+    }
+
+proc drop (out : 1) (a : nat) =
+    read a {
+        | 'zero(unit) =>
+            read unit ()
+            write out ()
+        | 'suc(a_prev) =>
+            call drop out a_prev
+    }
+
+proc mul (out : nat) (a : nat) (b : nat) =
+    read a {
+        // 0 * b = 0
+        | 'zero(unit) =>
+            read unit ()
+            cut tmp : 1 call drop tmp b
+            read tmp ()
+            call const_zero out
+
+        // suc a_prev * b = b + (a_prev * b)
+        | 'suc(a_prev) =>
+            cut b_copy : nat * nat
+                call copy b_copy b
+            read b_copy (b1, b2)
+            cut tmp : nat
+                call mul tmp a_prev b1
+            call add out b2 tmp
+    }
+
+proc const_two (out : nat) =
+    cut a : nat
+        call const_one a
+    cut b : nat
+        call const_one b
+    call add out a b
+
+proc const_four (out : nat) =
+    cut a : nat
+        call const_two a
+    cut b : nat
+        call const_two b
+    call mul out a b
+
+proc const_sixteen (out : nat) =
+    cut a : nat
+        call const_four a
+    cut b : nat
+        call const_four b
+    call mul out a b

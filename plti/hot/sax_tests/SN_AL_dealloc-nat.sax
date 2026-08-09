@@ -1,0 +1,9 @@
+type nat = +{'zero : 1, 'succ : nat}
+
+proc dealloc_nat (d : 1) (x : nat) =
+  read x {
+  | 'zero(u) => id d u
+  | 'succ(u) => cut r : 1
+                call dealloc_nat r u
+                id d r
+  }

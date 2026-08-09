@@ -1,0 +1,111 @@
+// should work
+type nat = +{'zero : 1, 'succ : nat}
+
+type even = +{'zeroE : 1, 'succE : odd}
+type odd = +{'succO : even}
+type weirdNat = +{'even : even, 'odd : odd}
+
+proc natToWeird (d : weirdNat) (n : nat) =
+    read n {
+    | 'zero(u) =>
+        cut e : even
+            write e 'zeroE(u)
+        write d 'even(e)
+    | 'succ(m) =>
+        cut r : weirdNat
+            call natToWeird r m
+        read r {
+        | 'even(e) => 
+            cut o : odd
+                write o 'succO(e)
+            write d 'odd(o)
+        | 'odd(o) =>
+            cut e : even
+                write e 'succE(o)
+            write d 'even(e)
+        }
+    }
+
+proc weirdToNat (d : nat) (w : weirdNat) =
+    read w {
+    | 'even(e) => 
+        read e {
+        | 'zeroE(u) => write d 'zero(u)
+        | 'succE(o) => 
+            cut i : weirdNat
+                write i 'odd(o)
+            cut r : nat
+                call weirdToNat r i
+            write d 'succ(r)
+        }
+    | 'odd(o) =>
+        read o {
+        | 'succO(e) =>
+            cut i : weirdNat
+                write i 'even(e)
+            cut r : nat
+                call weirdToNat r i
+            write d 'succ(r)
+        }
+    }
+
+proc zero (d : nat) =
+    cut u : 1
+        write u ()
+    write d 'zero(u)
+
+proc one (d : nat) =
+    cut z : nat
+        call zero z
+    write d 'succ(z)
+
+proc two (d : nat) =
+    cut o : nat
+        call one o
+    write d 'succ(o)
+
+proc twoToo (d : nat) =
+    cut t : nat
+        call two t
+    cut w : weirdNat
+        call natToWeird w t
+    call weirdToNat d w
+
+type bool = +{'true : 1, 'false : 1}
+
+proc dealloc (d : 1) (n : nat) =
+    read n {
+    | 'zero(u) => id d u
+    | 'succ(m) => call dealloc d m    
+    }
+
+proc equal (d : bool) (n1 : nat) (n2 : nat) =
+    read n1 {
+    | 'zero(u) => 
+        read u ()
+        read n2 {
+        | 'zero(w) => write d 'true(w)
+        | 'succ(n) =>
+            cut w : 1
+                call dealloc w n
+            write d 'false(w)
+        }
+    | 'succ(n) =>
+        read n2 {
+        | 'zero(u) => 
+            read u ()
+            cut w : 1
+                call dealloc w n
+            write d 'false(w)
+        | 'succ(m) =>
+            call equal d n m
+        }
+    }
+
+// should be true
+proc ultimateTest (d : bool) =
+    cut t1 : nat
+        call two t1
+    cut t2 : nat
+        call twoToo t2
+    call equal d t1 t2

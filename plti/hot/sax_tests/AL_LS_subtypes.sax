@@ -1,0 +1,139 @@
+/* Test that subtyping works using example from lecture */
+
+type nat = +{'zero : 1, 'succ : nat}
+type unary = +{'zero : 1, 'succ : nat} // equivalent type
+type pos = +{'succ : nat} // subtype
+
+/* We should be able to pass in both things of all types. */
+proc succ (d : nat) (x : nat) =
+  write d 'succ(x)
+  
+/* We should be able to pass in only pos since no types are subtypes of pos. */
+proc pred (d : nat) (x : pos) =
+  read x { | 'succ(y) => id d y }
+
+/* TESTS */
+
+// nat tests
+proc nat_zero (d : nat) =
+  cut u : 1
+    write u ()
+  write d 'zero(u)
+
+proc succ_nat_zero (d : nat) =
+  cut zero : nat
+    call nat_zero zero
+  call succ d zero
+
+fail proc pred_nat_zero (d : nat) =
+  cut zero : nat
+    call nat_zero zero
+  call pred d zero
+
+proc nat_one (d : nat) =
+  cut zero : nat
+    call nat_zero zero
+  write d 'succ(zero)
+
+proc succ_nat_one (d : nat) =
+  cut one : nat
+    call nat_one one
+  call succ d one
+
+fail proc pred_nat_one (d : nat) =
+  cut one : nat
+    call nat_one one
+  call pred d one
+
+proc nat_two (d : nat) =
+  cut one : nat
+    call nat_one one
+  write d 'succ(one)
+
+proc succ_nat_two (d : nat) =
+  cut two : nat
+    call nat_one two
+  call succ d two
+
+fail proc pred_nat_two (d : nat) =
+  cut two : nat
+    call nat_one two
+  call pred d two
+
+// pos tests
+proc pos_one (d : pos) =
+  cut zero : nat
+    call nat_zero zero
+  write d 'succ(zero)
+
+proc succ_pos_one (d : nat) =
+  cut one : pos
+    call pos_one one
+  call succ d one
+
+proc pred_pos_one (d : nat) =
+  cut one : pos
+    call pos_one one
+  call pred d one
+
+proc pos_two (d : pos) =
+  cut one : pos
+    call pos_one one
+  write d 'succ(one)
+
+proc succ_pos_two (d : nat) =
+  cut two : pos
+    call pos_one two
+  call succ d two
+
+proc pred_pos_two (d : nat) =
+  cut two : pos
+    call pos_two two
+  call pred d two
+
+// unary tests (same as nat tests)
+proc unary_zero (d : unary) =
+  cut u : 1
+    write u ()
+  write d 'zero(u)
+
+proc succ_unary_zero (d : unary) =
+  cut zero : nat // we can mix and match unary and nat as needed
+    call unary_zero zero
+  call succ d zero
+
+fail proc pred_unary_zero (d : unary) =
+  cut zero : unary
+    call unary_zero zero
+  call pred d zero
+
+proc unary_one (d : unary) =
+  cut zero : unary
+    call nat_zero zero
+  write d 'succ(zero)
+
+proc succ_unary_one (d : unary) =
+  cut one : unary
+    call unary_one one
+  call succ d one
+
+fail proc pred_unary_one (d : unary) =
+  cut one : unary
+    call unary_one one
+  call pred d one
+
+proc unary_two (d : unary) =
+  cut one : unary
+    call unary_one one
+  write d 'succ(one)
+
+proc succ_unary_two (d : unary) =
+  cut two : unary
+    call unary_one two
+  call succ d two
+
+fail proc pred_unary_two (d : unary) =
+  cut two : unary
+    call unary_one two
+  call pred d two
+

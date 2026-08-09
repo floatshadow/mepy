@@ -1,0 +1,9 @@
+type bin = +{'b0: bin, 'b1: bin, 'e: 1}
+proc f (d: bin) (b: 1) (c: 1) = 
+    read b () 
+    read c () 
+    cut r : bin 
+        cut e : 1 
+            write e () 
+        write r 'e (e)
+    id d r

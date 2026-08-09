@@ -1,0 +1,59 @@
+type bool = +{'true : 1, 'false : 1}
+
+proc or (d : bool) (x : bool) (y : bool) =
+  read x {
+  | 'true(u) => read y {
+                | 'false(v) => read v ()
+                                write d 'true(u)
+                | 'true(v) => read v ()
+                              write d 'true(u)
+                }
+  | 'false(u) => read u ()
+                 id d y
+  }
+
+fail proc or (d : bool) (x : bool) (y : bool) =
+  read x {
+  | 'true(u) => read u ()
+                id d x
+  | 'false(u) => read u ()
+                 id d y
+  }
+
+proc true (d : bool) =
+  cut u : 1
+    write u ()
+  write d 'true(u)
+
+proc false (d : bool) =
+  cut u : 1
+    write u ()
+  write d 'false(u)
+
+proc true_or_true (d : bool) =
+  cut u : bool
+    call true u
+  cut v : bool
+    call true v
+  call or d u v
+
+proc true_or_false (d : bool) =
+  cut u : bool
+    call true u
+  cut v : bool
+    call false v
+  call or d u v
+
+proc false_or_true (d : bool) =
+  cut u : bool
+    call false u
+  cut v : bool
+    call true v
+  call or d u v
+
+proc false_or_false (d : bool) =
+  cut u : bool
+    call false u
+  cut v : bool
+    call false v
+  call or d u v

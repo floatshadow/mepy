@@ -1,0 +1,9 @@
+type bin = +{'b0: bin, 'b1: bin, 'e: 1}
+fail proc inf (d: bin) (b: bin) = 
+    cut x : bin 
+        cut x : 1 
+            cut x : 1 
+                write x () 
+            write x () 
+        write x 'e(x)
+    id d x

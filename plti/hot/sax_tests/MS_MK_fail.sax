@@ -1,0 +1,144 @@
+fail type dup = +{ 'again : 1, 'again : 1 }
+
+fail type dup2 = dup
+
+type good = 1
+
+fail type good = 1
+
+fail proc out_of (d : thin_air) =
+  write d ()
+
+proc unit (d : 1) =
+  write d ()
+
+fail proc missing (d : 1) =
+  call no d
+
+fail proc dup3 (d : 1) (d : 1) (a : 1) =
+  read d ()
+    id d a
+
+fail proc dup4 (d : 1) (a : 1) (b : 1) (a : 1) =
+  read a ()
+    read b ()
+      id d a
+
+fail proc shadow (d : 1) =
+  cut d : 1
+    call unit d
+    id d d
+
+
+type nat = +{ 'zero : 1, 'succ : nat }
+
+/* type checking fail */
+
+fail proc zero (d : nat) =
+  cut u : nat
+    write u ()
+    write d 'zero(u)
+
+proc zero (d : nat) =
+  cut u : 1
+    write u ()
+    write d 'zero(u)
+ 
+fail proc dup_nat (d : nat) (n : nat) =
+  read n {
+  | 'zero(u) => cut z1 : nat
+                  write z1 'zero(u)
+                  cut z2 : nat
+                    call zero z2
+                    write d (z1, z2)
+  | 'succ(s) => cut ss : nat * nat
+                  call dup_nat ss s
+                  read ss (s1, s2)
+                    cut d1 : nat
+                      call succ d1 s1
+                      cut d2 : nat
+                        call succ d2 s2
+                        write d (d1, d2)
+  }
+
+/* variable not used */
+
+fail proc dup_nat (d : nat * nat) (n : nat) =
+  read n {
+  | 'zero(u) => cut z1 : nat
+                  call zero z1
+                  cut z2 : nat
+                    call zero z2
+                    write d (z1, z2)
+  | 'succ(s) => cut ss : nat * nat
+                  call dup_nat ss s
+                  read ss (s1, s2)
+                    cut d1 : nat
+                      call succ d1 s1
+                      cut d2 : nat
+                        call succ d2 s2
+                        write d (d1, d2)
+  }
+
+fail proc dup_nat (d : nat * nat) (n : nat) =
+  read n {
+  | 'zero(u) => cut z1 : nat
+                  cut z2 : nat
+                    call zero z2
+                    write z1 'zero(u)
+                  write d (z1, z2)
+  | 'succ(s) => cut ss : nat * nat
+                  call dup_nat ss s
+                  read ss (s1, s2)
+                    cut d1 : nat
+                      call succ d1 s1
+                      cut d2 : nat
+                        call succ d2 s2
+                        write d (d1, d2)
+  }
+
+/* cut fail */
+
+fail proc cut_fail (d : 1) (a : 1) =
+  cut z : 1
+    id d z
+    id d a
+
+fail proc double_read (d : 1) (a : 1) =
+  cut z : 1
+    write z ()
+    read a ()
+      read a ()
+        id d z
+
+fail proc double_write (d : 1) (a : 1) =
+  cut z : 1
+    write d ()
+    id d a
+
+/* case fail */
+
+proc case (d : 1) (n : nat) =
+  read n {
+  | 'zero(u) => id d u
+  | 'succ(s) => call case d s
+  }
+
+fail proc case1 (d : 1) (n : nat) =
+  read n {
+  | 'zero(u) => id d u
+  }
+
+fail proc case2 (d : 1) (n : nat) =
+  read n {
+  | 'zero(u) => id d u
+  | 'succ(s) => call case2 d s
+  | 'zero(u) => id d u
+  }
+
+fail proc case3 (d : 1) (n : nat) =
+  read n {
+  | 'zero(u) => id d u
+  | 'succ(s) => call case3 d s
+  | 'fail(u) => id d u
+  }

@@ -1,0 +1,68 @@
+type nat = +{'zero : 1, 'succ : unary}
+type unary = +{'zero : 1, 'succ : nat}
+
+type bool = +{'true : 1, 'false : 1}
+type blist = +{'nil : 1, 'cons : bool * blist}
+
+proc not (d : bool) (b : bool) =
+    read b {
+    | 'true(u) => write d 'false(u)
+    | 'false(u) => write d 'true(u)
+    }
+
+proc lnot (d : blist) (bs : blist) =
+    read bs {
+    | 'nil(u) => write d 'nil(u)
+    | 'cons(p) => read p (b, bs)
+                  cut nb : bool
+                      call not nb b
+                  cut nbs : blist
+                      call lnot nbs bs
+                  cut el : bool * blist
+                      write el (nb, nbs)
+                  write d 'cons(el)
+    }
+
+proc example (d : blist) =
+    cut b1 : bool
+        cut u : 1
+            write u ()
+        write b1 'true(u)
+    cut b2 : bool
+        cut u : 1
+            write u ()
+        write b2 'true(u)
+    cut b3 : bool
+        cut u : 1
+            write u ()
+        write b3 'false(u)
+    cut b4 : bool
+        cut u : 1
+            write u ()
+        write b4 'true(u)
+    cut bl0 : blist
+        cut u : 1
+            write u ()
+        write bl0 'nil(u)
+    cut bl1 : blist
+        cut el : bool * blist
+            write el (b1, bl0)
+        write bl1 'cons(el)
+    cut bl2 : blist
+        cut el : bool * blist
+            write el (b2, bl1)
+        write bl2 'cons(el)
+    cut bl3 : blist
+        cut el : bool * blist
+            write el (b3, bl2)
+        write bl3 'cons(el)
+    cut bl4 : blist
+        cut el : bool * blist
+            write el (b4, bl3)
+        write bl4 'cons(el)
+    id d bl4
+
+proc test (d : blist) =
+    cut bl : blist
+        call example bl
+    call lnot d bl

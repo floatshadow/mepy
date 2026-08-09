@@ -1,0 +1,73 @@
+/* Compute XOR of two binary numbers */
+
+type bin = +{'b0 : bin, 'b1 : bin, 'e : 1}
+
+proc use (d : 1) (x : bin)  =
+    read x {
+        | 'b0(x0) => call use d x0
+        | 'b1(x1) => call use d x1
+        | 'e(u)   => read u () 
+                     write d ()
+    }
+
+/* Terminate when the first string ends */
+proc xor (d : bin) (x : bin) (y : bin) =
+  read x {
+    | 'b0(x0) =>  
+        read y {
+            | 'b0(y0) => cut res : bin
+                            call xor res x0 y0
+                         write d 'b0(res)
+            | 'b1(y1) => cut res : bin
+                            call xor res x0 y1
+                         write d 'b1(res)
+            | 'e(u)   => cut res : 1
+                            call use res x0
+                         read res ()
+                         write d 'e(u)
+        }
+    | 'b1(x1) =>  
+        read y {
+            | 'b0(y0) => cut res : bin
+                            call xor res x1 y0
+                         write d 'b1(res)
+            | 'b1(y1) => cut res : bin
+                            call xor res x1 y1
+                         write d 'b0(res)
+            | 'e(u)   => cut res : 1
+                            call use res x1
+                         read res ()
+                         write d 'e(u)
+        }
+    | 'e(u)  => cut res : 1
+                    call use res y
+                read res ()
+                write d 'e(u)
+  }
+
+proc zero (d : bin) = 
+  cut u : 1
+    write u ()
+  write d 'e(u)
+
+proc one (d : bin) =
+  cut u : bin
+    call zero u
+  write d 'b1(u)
+
+proc two (d : bin) =
+  cut u : bin
+    call one u
+  write d 'b0(u)
+
+proc five (d : bin) =
+  cut u : bin
+    call two u
+  write d 'b1(u)
+
+proc main (d : bin) =
+  cut input1 : bin
+    call five input1
+  cut input2 : bin
+    call two input2
+  call xor d input1 input2

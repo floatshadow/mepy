@@ -1,0 +1,115 @@
+type nat = +{'zero : 1, 'succ : nat}
+type list = +{'nil : 1, 'cons : nat*list}
+type bool = +{'true : 1, 'false : 1}
+
+proc dealloc_nat (d : 1) (x : nat) =
+     read x {
+     | 'zero(u) => id d u
+     | 'succ (n) => call dealloc_nat d n
+     }
+
+proc duplicate_nat (d : nat*nat) (x : nat) =
+     read x {
+     | 'zero(u) => cut v : 1
+                     write v ()
+		   cut fst : nat
+		     write fst 'zero(u)
+		   cut snd : nat
+		     write snd 'zero(v)
+		   write d (fst, snd)
+     | 'succ(u) => cut duped : nat*nat
+                     call duplicate_nat duped u
+		   read duped{
+		   | (fst, snd) =>
+		   cut nfst : nat
+		     write nfst 'succ(fst)
+		   cut nsnd : nat
+		     write nsnd 'succ(snd)
+		   write d (nfst, nsnd)
+		   }
+     }
+
+proc dealloc_list (d : 1) (l : list) =
+     read l {
+     | 'nil(u) => id d u
+     | 'cons(hdtl) => read hdtl {
+                      | (head, tail) => cut z : 1
+                                          call dealloc_nat z head
+			                read z {|() => call dealloc_list d tail}
+                      }
+     }
+
+proc equal_nat (d : bool) (x : nat) (y : nat) =
+     read x {
+     | 'zero(u) => read y {
+                          | 'zero(v) => read u { | () => write d 'true(v)}
+			  | 'succ(n) => read u { | () => cut z : 1
+			                                   call dealloc_nat z n
+						       write d 'false(z)}
+	           }
+     | 'succ(u) => read y {
+                   | 'zero(v) => read v{ | () => cut z : 1
+		                                 call dealloc_nat z u
+					       write d 'false(z)
+				       }
+		   | 'succ(v) => call equal_nat d u v
+                   }
+     }
+
+fail proc search_for_nat (d : bool) (nat_list : list) (target : nat) =
+     read nat_list {
+     | 'nil(u) => read u {|() => cut z : 1
+                                   call dealloc_nat z target
+				 write d 'false(z)}
+     | 'cons(hdtl) => read hdtl {
+                      | (head, tail) => cut eq : bool
+		                          call equal_nat eq head target
+					read eq {
+					| 'true(u) => read u {|() => cut un : 1
+					                               call dealloc_list un tail
+					              write d 'true(un)}
+				        | 'false(u) => read u {|() => call search_for_nat d tail target}
+					}
+                      }
+     }
+
+proc zero (d : nat) = cut empty : 1
+                        write empty ()
+	              write d 'zero(empty)
+
+proc one (d : nat) = cut z : nat
+                        call zero z
+	             write d 'succ(z)
+
+proc two (d : nat) = cut o : nat
+                        call one o
+	             write d 'succ(o)
+
+proc emptylist (d : list) = cut empty : 1
+                              write empty ()
+			    write d 'nil(empty)
+
+proc zeroonlist (d : list) = cut el : list
+                              call emptylist el
+			    cut z : nat
+			      call zero z
+			    cut pair : nat*list
+			      write pair (z, el)
+			    write d 'cons(pair)
+
+proc zeroandonelist (d : list) = cut l : list
+                                   call zeroonlist l
+			         cut o : nat
+			           call one o
+			         cut pair : nat*list
+			           write pair (o, l)
+			         write d 'cons(pair)
+
+proc zerototwoonlist (d : list) = cut l : list
+                                    call zeroandonelist l
+			          cut t : nat
+			            call two t
+			          cut pair : nat*list
+			            write pair (t, l)
+			          write d 'cons(pair)
+                              

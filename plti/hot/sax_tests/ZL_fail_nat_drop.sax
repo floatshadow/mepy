@@ -1,0 +1,13 @@
+type nat = +{ 'zero: 1, 'suc: nat }
+type bool = +{ 'false: 1, 'true: 1 }
+
+fail proc drop (out : 1) (a : nat) =
+    read a {
+        | 'zero(unit) =>
+            read unit ()
+            write out ()
+
+        | 'suc(a_prev) =>
+            cut tmp : 1 call drop tmp a_prev
+            write out ()
+    }

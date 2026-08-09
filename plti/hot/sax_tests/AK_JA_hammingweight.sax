@@ -1,0 +1,39 @@
+/* Compute Hamming weight */
+
+type nat = +{'zero : 1, 'succ : nat}
+
+type bin = +{'b0 : bin, 'b1 : bin, 'e : 1}
+
+proc hamming_weight (d : nat) (input : bin) =
+  read input {
+    | 'b0(x0) =>  call hamming_weight d x0
+    | 'b1(x1) =>  cut res : nat
+                    call hamming_weight res x1
+                  write d 'succ(res)
+    | 'e(u)   =>  write d 'zero(u)
+  }
+
+proc zero (d : bin) = 
+  cut u : 1
+    write u ()
+  write d 'e(u)
+
+proc one (d : bin) =
+  cut u : bin
+    call zero u
+  write d 'b1(u)
+
+proc two (d : bin) =
+  cut u : bin
+    call one u
+  write d 'b0(u)
+
+proc five (d : bin) =
+  cut u : bin
+    call two u
+  write d 'b1(u)
+
+proc main (d : nat) =
+  cut input : bin
+    call five input
+  call hamming_weight d input

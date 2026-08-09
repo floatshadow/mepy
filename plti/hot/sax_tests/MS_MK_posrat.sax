@@ -1,0 +1,255 @@
+type nat = +{ 'zero : 1, 'succ : nat }
+
+type pos = +{ 'succ : nat }
+
+type posrat = nat * pos
+
+proc force_pos (d : pos) (a : nat) =
+  read a {
+  | 'zero(u) => cut p : nat
+                  write p 'zero(u)
+                  write d 'succ(p)
+  | 'succ(s) => write d 'succ(s)
+  }
+
+proc succ (d : nat) (n : nat) =
+  write d 'succ(n)
+
+proc add (d : nat) (a : nat) (b : nat) =
+  read b {
+  | 'zero(u) => read u ()
+                  id d a
+  | 'succ(s) => cut x : nat
+                  call add x a s
+                  call succ d x
+  }
+
+proc add_pos (d : pos) (a : pos) (b : pos) =
+  cut r : nat
+    call add r a b
+    read r {
+    | 'zero(u) => cut p : nat /* this case should never happen */
+                    write p 'zero(u)
+                    write d 'succ(p)
+    | 'succ(s) => write d 'succ(s)
+    }
+
+proc dealloc_nat (d : 1) (n : nat) =
+  read n {
+  | 'zero(u) => id d u
+  | 'succ(s) => call dealloc_nat d s
+  }
+
+proc zero (d : nat) =
+  cut u : 1
+    write u ()
+    write d 'zero(u)
+
+proc dup_nat (d : nat * nat) (n : nat) =
+  read n {
+  | 'zero(u) => cut z1 : nat
+                  write z1 'zero(u)
+                  cut z2 : nat
+                    call zero z2
+                    write d (z1, z2)
+  | 'succ(s) => cut ss : nat * nat
+                  call dup_nat ss s
+                  read ss (s1, s2)
+                    cut d1 : nat
+                      call succ d1 s1
+                      cut d2 : nat
+                        call succ d2 s2
+                        write d (d1, d2)
+  }
+
+proc mul (d : nat) (a : nat) (b : nat) =
+  read b {
+  | 'zero(u) => cut w : 1
+                  call dealloc_nat w a
+                  read w ()
+                    write d 'zero(u)
+  | 'succ(s) => cut as : nat * nat
+                  call dup_nat as a
+                  read as (a1, a2)
+                    cut e : nat
+                      call mul e a1 s
+                      call add d a2 e
+  }
+
+proc mul_pos (d : pos) (a : pos) (b : pos) =
+  cut r : nat
+    call mul r a b
+    read r {
+    | 'zero(u) => cut p : nat /* this case should never happen */
+                    write p 'zero(u)
+                    write d 'succ(p)
+    | 'succ(s) => write d 'succ(s)
+    }
+
+proc mul_posrat (d : posrat) (a : posrat) (b : posrat) =
+  read a (m1, n1)
+    read b (m2, n2)
+      cut m : nat
+        call mul m m1 m2
+        cut n : pos
+          call mul_pos n n1 n2
+          write d (m, n)
+
+proc one (d : nat) =
+  cut z : nat
+    call zero z
+    call succ d z
+
+proc two (d : nat) =
+  cut one1 : nat
+    call one one1
+    cut one2 : nat
+      call one one2
+      call add d one1 one2
+
+proc three (d : nat) =
+  cut t : nat
+    call two t
+    call succ d t
+
+proc four (d : nat) =
+  cut two1 : nat
+    call two two1
+    cut two2 : nat
+      call two two2
+      call mul d two1 two2
+
+proc five (d : nat) =
+  cut two : nat
+    call two two
+    cut three : nat
+      call three three
+      call add d two three
+
+proc six (d : nat) =
+  cut two : nat
+    call two two
+    cut three : nat
+      call three three
+      call mul d two three
+
+proc five_fourths (d : posrat) =
+  cut five : nat
+    call five five
+    cut four : nat
+      call four four
+      cut four_pos : pos
+        call force_pos four_pos four
+        write d (five, four_pos)
+
+proc two_sixths (d : posrat) =
+  cut two : nat
+    call two two
+    cut six : nat
+      call six six
+      cut six_pos : pos
+        call force_pos six_pos six
+        write d (two, six_pos)
+
+proc one_thirds (d : posrat) =
+  cut one : nat
+    call one one
+    cut three : nat
+      call three three
+      cut three_pos : pos
+        call force_pos three_pos three
+        write d (one, three_pos)
+
+proc one_fourths (d : posrat) =
+  cut one : nat
+    call one one
+    cut four : nat
+      call four four
+      cut four_pos : pos
+        call force_pos four_pos four
+        write d (one, four_pos)
+
+type bool = +{ 'true : 1, 'false : 1 }
+
+proc nat_eq (d : bool) (a : nat) (b : nat) =
+  read a {
+  | 'zero(u1) => read u1 ()
+                   read b {
+                   | 'zero(u2) => write d 'true(u2)
+                   | 'succ(n) => cut u3 : 1 
+                                   call dealloc_nat u3 n
+                                   write d 'false(u3)
+		   }
+  | 'succ(n1) => read b {
+                 | 'zero(u1) => cut u2 : 1
+                                  call dealloc_nat u2 n1
+                                  read u2 ()
+                                    write d 'false(u1)
+                 | 'succ(n2) => call nat_eq d n1 n2
+                 }
+  }
+
+proc posrat_eq (d : bool) (a : posrat) (b : posrat) =
+  read a (m1, n1)
+    read b (m2, n2)
+      cut s : nat
+        call mul s m1 n2
+        cut t : nat
+          call mul t m2 n1
+          call nat_eq d s t
+
+proc eq_test1 (d : bool) =
+  cut a : posrat
+    call two_sixths a
+    cut b : posrat
+      call one_thirds b
+      call posrat_eq d a b
+
+proc eq_test2 (d : bool) =
+  cut a : posrat
+    call two_sixths a
+    cut b : posrat
+      call one_thirds b
+      call posrat_eq d b a
+
+proc eq_test3 (d : bool) =
+  cut a : posrat
+    call two_sixths a
+    cut b : posrat
+      call two_sixths b
+      call posrat_eq d a b
+
+proc eq_test4 (d : bool) =
+  cut a : posrat
+    call five_fourths a
+    cut b : posrat
+      call five_fourths b
+      call posrat_eq d b a
+
+proc neq_test1 (d : bool) =
+  cut a : posrat
+    call five_fourths a
+    cut b : posrat
+      call one_thirds b
+      call posrat_eq d a b
+
+proc neq_test2 (d : bool) =
+  cut a : posrat
+    call two_sixths a
+    cut b : posrat
+      call five_fourths b
+      call posrat_eq d a b
+
+proc neq_test3 (d : bool) =
+  cut a : posrat
+    call one_fourths a
+    cut b : posrat
+      call one_thirds b
+      call posrat_eq d a b
+
+proc neq_test4 (d : bool) =
+  cut a : posrat
+    call one_fourths a
+    cut b : posrat
+      call one_thirds b
+      call posrat_eq d b a

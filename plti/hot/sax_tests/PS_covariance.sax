@@ -1,0 +1,63 @@
+type foo = +{'foo : foo, 'bar : bar, 'baz : baz}
+type bar = +{'foo : foo, 'baz : baz}
+type baz = +{'bar : bar, 'baz : baz}
+
+proc test1 (d : foo) (s : foo) = id d s
+proc test2 (d : foo) (s : bar) = id d s
+proc test3 (d : foo) (s : baz) = id d s
+fail proc test (d : bar) (s : foo) = id d s
+fail proc test (d : bar) (s : baz) = id d s
+fail proc test (d : baz) (s : foo) = id d s
+fail proc test (d : baz) (s : bar) = id d s
+
+proc p1test1 (d : foo * bar) (s : foo * bar) = id d s
+proc p1test2 (d : foo * bar) (s : bar * bar) = id d s
+proc p1test3 (d : foo * bar) (s : baz * bar) = id d s
+fail proc test (d : bar * bar) (s : foo * bar) = id d s
+fail proc test (d : bar * bar) (s : baz * bar) = id d s
+fail proc test (d : baz * bar) (s : foo * bar) = id d s
+fail proc test (d : baz * bar) (s : bar * bar) = id d s
+
+proc p2test1 (d : bar * foo) (s : bar * foo) = id d s
+proc p2test2 (d : bar * foo) (s : bar * bar) = id d s
+proc p2test3 (d : bar * foo) (s : bar * baz) = id d s
+fail proc test (d : bar * bar) (s : bar * foo) = id d s
+fail proc test (d : bar * bar) (s : bar * baz) = id d s
+fail proc test (d : bar * baz) (s : bar * foo) = id d s
+fail proc test (d : bar * baz) (s : bar * bar) = id d s
+
+proc ptest1 (d : foo * foo) (s : foo * foo) = id d s
+proc ptest2 (d : foo * foo) (s : foo * bar) = id d s
+proc ptest3 (d : foo * foo) (s : foo * baz) = id d s
+proc ptest4 (d : foo * foo) (s : bar * foo) = id d s
+proc ptest5 (d : foo * foo) (s : bar * bar) = id d s
+proc ptest6 (d : foo * foo) (s : bar * baz) = id d s
+proc ptest7 (d : foo * foo) (s : baz * foo) = id d s
+proc ptest8 (d : foo * foo) (s : baz * bar) = id d s
+proc ptest9 (d : foo * foo) (s : baz * baz) = id d s
+
+proc s1test1 (d : +{'fst : foo, 'snd : bar}) (s : +{'fst : foo, 'snd : bar}) = id d s
+proc s1test2 (d : +{'fst : foo, 'snd : bar}) (s : +{'fst : bar, 'snd : bar}) = id d s
+proc s1test3 (d : +{'fst : foo, 'snd : bar}) (s : +{'fst : baz, 'snd : bar}) = id d s
+fail proc test (d : +{'fst : bar, 'snd : bar}) (s : +{'fst : foo, 'snd : bar}) = id d s
+fail proc test (d : +{'fst : bar, 'snd : bar}) (s : +{'fst : baz, 'snd : bar}) = id d s
+fail proc test (d : +{'fst : baz, 'snd : bar}) (s : +{'fst : foo, 'snd : bar}) = id d s
+fail proc test (d : +{'fst : baz, 'snd : bar}) (s : +{'fst : bar, 'snd : bar}) = id d s
+
+proc s2test1 (d : +{'fst : bar, 'snd : foo}) (s : +{'fst : bar, 'snd : foo}) = id d s
+proc s2test2 (d : +{'fst : bar, 'snd : foo}) (s : +{'fst : bar, 'snd : bar}) = id d s
+proc s2test3 (d : +{'fst : bar, 'snd : foo}) (s : +{'fst : bar, 'snd : baz}) = id d s
+fail proc test (d : +{'fst : bar, 'snd : bar}) (s : +{'fst : bar, 'snd : foo}) = id d s
+fail proc test (d : +{'fst : bar, 'snd : bar}) (s : +{'fst : bar, 'snd : baz}) = id d s
+fail proc test (d : +{'fst : bar, 'snd : baz}) (s : +{'fst : bar, 'snd : foo}) = id d s
+fail proc test (d : +{'fst : bar, 'snd : baz}) (s : +{'fst : bar, 'snd : bar}) = id d s
+
+proc stest1 (d : +{'fst : foo, 'snd : foo}) (s : +{'fst : foo, 'snd : foo}) = id d s
+proc stest2 (d : +{'fst : foo, 'snd : foo}) (s : +{'fst : foo, 'snd : bar}) = id d s
+proc stest3 (d : +{'fst : foo, 'snd : foo}) (s : +{'fst : foo, 'snd : baz}) = id d s
+proc stest4 (d : +{'fst : foo, 'snd : foo}) (s : +{'fst : bar, 'snd : foo}) = id d s
+proc stest5 (d : +{'fst : foo, 'snd : foo}) (s : +{'fst : bar, 'snd : bar}) = id d s
+proc stest6 (d : +{'fst : foo, 'snd : foo}) (s : +{'fst : bar, 'snd : baz}) = id d s
+proc stest7 (d : +{'fst : foo, 'snd : foo}) (s : +{'fst : baz, 'snd : foo}) = id d s
+proc stest8 (d : +{'fst : foo, 'snd : foo}) (s : +{'fst : baz, 'snd : bar}) = id d s
+proc stest9 (d : +{'fst : foo, 'snd : foo}) (s : +{'fst : baz, 'snd : baz}) = id d s

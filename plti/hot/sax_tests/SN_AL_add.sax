@@ -1,0 +1,41 @@
+type nat = +{'zero : 1, 'succ : nat}
+
+proc add (d : nat) (x : nat) (y : nat) =
+  read x {
+  | 'zero(u) => read u ()
+                id d y
+  | 'succ(u) => cut r : nat
+                  call add r u y
+                write d 'succ(r)
+  }
+
+fail proc add (x : nat) (y : nat) (d : nat) =
+  read x {
+  | 'zero(u) => read u ()
+                id d y
+  | 'succ(u) => cut r : nat
+                  call add r u y
+                write d 'succ(r)
+  }
+
+proc zero (d : nat) =
+  cut u : 1
+    write u ()
+  write d 'zero(u)
+
+proc one (d : nat) =
+  cut u : nat
+    call zero u
+  write d 'succ(u)
+
+proc two (d : nat) =
+  cut u : nat
+    call one u
+  write d 'succ(u)
+
+proc four (d : nat) =
+  cut x : nat
+    call two x
+  cut y : nat
+    call two y
+  call add d x y

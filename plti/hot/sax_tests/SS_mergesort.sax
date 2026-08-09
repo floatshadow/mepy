@@ -1,0 +1,247 @@
+// should work
+// implements interesting algorithm, per writeup requirements
+type nat = +{'zero : 1, 'succ : nat}
+type list = +{'nil : 1, 'cons : nat * list}
+type bool = +{'true : 1, 'false : 1}
+
+// for deallocating nats
+proc deallocNat (d : 1) (n : nat) =
+    read n {
+    | 'zero(u) => id d u
+    | 'succ(m) => call deallocNat d m    
+    }
+
+// for duplicating nats
+proc dupNat (d : nat * nat) (n : nat) =
+    read n {
+    | 'zero(u) =>
+        cut w : 1
+            write w ()
+        cut z1 : nat
+            write z1 'zero(u)
+        cut z2 : nat
+            write z2 'zero(w)
+        write d (z1, z2)
+    | 'succ(m) =>
+        cut r : nat * nat
+            call dupNat r m
+        read r (m1, m2)
+        cut n1 : nat
+            write n1 'succ(m1)
+        cut n2 : nat
+            write n2 'succ(m2)
+        write d (n1, n2)
+    }
+
+// less than or equal comparison for nats
+proc leq (d : bool) (n1 : nat) (n2 : nat) =
+    read n1 {
+    | 'zero(u) => 
+        cut w : 1
+            call deallocNat w n2
+        read w ()
+        write d 'true(u)
+    | 'succ(n) => 
+        read n2 {
+        | 'zero(u) =>
+            cut w : 1
+                call deallocNat w n
+            read w ()
+            write d 'false(u)
+        | 'succ(m) => call leq d n m
+        }
+    }
+
+// splits list into two halves
+proc split (d : list * list) (l : list) =
+    read l {
+    | 'nil(u) => 
+        // writing ([], []) to d
+        cut w : 1
+            write w ()
+        cut l1 : list
+            write l1 'nil(u)
+        cut l2 : list
+            write l2 'nil(w)
+        write d (l1, l2)
+    | 'cons(p) =>
+        read p (x, xs)
+        read xs {
+        | 'nil(u) => 
+            // writing ([x], []) to d
+            cut e1 : list
+                write e1 'nil(u)
+            cut c1 : nat * list
+                write c1 (x, e1)
+            cut l1 : list
+                write l1 'cons(c1)
+            cut w : 1
+                write w ()
+            cut e2 : list
+                write e2 'nil(w)
+            write d (l1, e2)
+        | 'cons(q) =>
+            // recursively split, add x to left list and y to right list
+            read q (y, ys)
+            cut r : list * list
+                call split r ys
+            read r (l1, l2)
+            cut c1 : nat * list
+                write c1 (x, l1)
+            cut newL1 : list
+                write newL1 'cons(c1)
+            cut c2 : nat * list
+                write c2 (y, l2)
+            cut newL2 : list
+                write newL2 'cons(c2)
+            write d (newL1, newL2)
+        }
+    }
+
+// merges two sorted lists together such that result is sorted
+proc merge (d : list) (l1 : list) (l2 : list) =
+    read l1 {
+    | 'nil(u) =>
+        read u ()
+        read l2 {
+        | 'nil(w) =>
+            // merge [] [] = []
+            write d 'nil(w)
+        | 'cons(l) =>
+            // merge [] l = l
+            write d 'cons(l)
+        }
+    | 'cons(p1) =>
+        read l2 {
+        | 'nil(u) =>
+            // merge l [] = l 
+            read u ()
+            write d 'cons(p1)
+        | 'cons(p2) =>
+            // recursively merge, then combine first elements in correct order
+            read p1 (x, xs)
+            read p2 (y, ys)
+            // first duplicate head elems so that we can reuse them
+            cut xDup : nat * nat
+                call dupNat xDup x
+            cut yDup : nat * nat
+                call dupNat yDup y
+            read xDup (x1, x2)
+            read yDup (y1, y2)
+            cut r : list
+                call merge r xs ys
+            cut b : bool
+                call leq b x1 y1
+            read b {
+            | 'true(u) =>
+                read u ()
+                cut subC : nat * list
+                    write subC (y2, r)
+                cut subList : list
+                    write subList 'cons(subC)
+                cut c : nat * list
+                    write c (x2, subList)
+                write d 'cons(c)
+            | 'false(u) =>
+                read u ()
+                cut subC : nat * list
+                    write subC (x2, r)
+                cut subList : list
+                    write subList 'cons(subC)
+                cut c : nat * list
+                    write c (y2, subList)
+                write d 'cons(c)
+            }
+        }
+    }
+
+// merge sort algorithm
+proc msort (d : list) (l : list) =
+    read l {
+    | 'nil(u) => write d 'nil(u)
+    | 'cons(p1) =>
+        read p1 (x, xs)
+        read xs {
+        | 'nil(u) => 
+            cut e : list
+                write e 'nil(u)
+            cut c : nat * list
+                write c (x, e)
+            write d 'cons(c)
+        | 'cons(p2) =>
+            // put list back together after pattern-matching
+            cut subList : list
+                write subList 'cons(p2)
+            cut c : nat * list
+                write c (x, subList)
+            cut ll : list
+                write ll 'cons(c)
+            // actual algorithm
+            cut r : list * list
+                call split r ll
+            read r (l1, l2)
+            cut l1Sort : list
+                call msort l1Sort l1
+            cut l2Sort : list
+                call msort l2Sort l2
+            call merge d l1Sort l2Sort
+        }
+    }
+
+// testing sorting function
+
+proc zero (d : nat) =
+    cut u : 1
+        write u ()
+    write d 'zero(u)
+
+proc one (d : nat) =
+    cut z : nat
+        call zero z
+    write d 'succ(z)
+
+proc two (d : nat) =
+    cut o : nat
+        call one o
+    write d 'succ(o)
+
+proc three (d : nat) =
+    cut t : nat
+        call two t
+    write d 'succ(t)
+
+// the list [2, 0, 1, 3]
+proc unsortedList (d : list) =
+    cut u : 1
+        write u ()
+    cut e : list
+        write e 'nil(u)
+    cut elem1 : nat
+        call two elem1
+    cut elem2 : nat
+        call zero elem2
+    cut elem3 : nat
+        call one elem3
+    cut elem4 : nat
+        call three elem4
+    cut subC1 : nat * list
+        write subC1 (elem4, e)
+    cut subList1 : list
+        write subList1 'cons(subC1)
+    cut subC2 : nat * list
+        write subC2 (elem3, subList1)
+    cut subList2 : list
+        write subList2 'cons(subC2)
+    cut subC3 : nat * list
+        write subC3 (elem2, subList2)
+    cut subList3 : list
+        write subList3 'cons(subC3)
+    cut subC4 : nat * list
+        write subC4 (elem1, subList3)
+    write d 'cons(subC4)
+
+// hopefully the list is sorted after this, i.e. [0, 1, 2, 3]
+proc sortedList (d : list) =
+    cut uL : list
+        call unsortedList uL
+    call msort d uL

@@ -1,0 +1,6 @@
+// should not work, various illegal type definitions
+
+type nat = +{'zero : 1, 'succ : nat}
+fail type bigNat = +{'zero : 1, 'succ : nat, 'succ : nat}
+fail type nat = +{'nil : 1, 'cons : nat}
+fail type altNat = nat

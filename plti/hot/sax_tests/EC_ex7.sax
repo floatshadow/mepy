@@ -1,0 +1,40 @@
+type _1 = +{'1: 1}
+type _2 = +{'1: _1, '2: _2 * _1}
+type _3 = +{'1: _2, '2: _3 * _1}
+type _4 = +{'1: _4, '2: _2 * _2}
+
+proc f1 (d: 1) (x: _1) = 
+    read x {
+        | '1 (u) => id d u 
+    } 
+
+proc f2 (d: 1) (x: _2) = 
+    read x {
+        | '1 (u) => call f1 d u 
+        | '2 (u) => read u (u1, u2) 
+                    cut w : 1 
+                        call f2 w u1 
+                    read w ()
+                    call f1 d u2 
+    } 
+
+proc f3 (d: 1) (x: _3) = 
+    read x {
+        | '1 (u) => call f2 d u 
+        | '2 (u) => read u (u1, u2) 
+                    cut w : 1 
+                        call f3 w u1 
+                    read w ()
+                    call f1 d u2 
+    } 
+
+
+proc f4 (d: 1) (x: _4) = 
+    read x {
+        | '1 (u) => call f4 d u 
+        | '2 (u) => read u (u1, u2) 
+                    cut w : 1 
+                        call f2 w u1 
+                    read w ()
+                    call f2 d u2 
+    } 

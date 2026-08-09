@@ -1,0 +1,87 @@
+type nat = +{'zero : 1, 'succ : nat}
+type list = +{'nil : 1, 'cons : nat * list}
+type tree = +{'empty : 1, 'node : tree * nat * tree}
+
+proc zero (d : nat) =
+    cut u : 1
+        write u ()
+    write d 'zero(u)
+
+proc one (d : nat) =
+    cut z : nat
+        call zero z
+    write d 'succ(z)
+
+proc append (d : list) (x : list) (y : list) =
+    read x {
+    | 'nil(u) => read u () id d y
+    | 'cons(l) => read l (hd, xs)
+                  cut z : list
+                    call append z xs y
+                  cut temp : nat * list
+                    write temp (hd, z)
+                  write d 'cons(temp)
+    }
+
+proc make_node (d : tree) (l : tree) (n : nat) (r : tree) =
+    cut temp1 : nat * tree
+        write temp1 (n, r)
+    cut temp : tree * nat * tree
+        write temp (l, temp1)
+    write d 'node(temp)
+
+proc make_leaf (d : tree) (n : nat) =
+    cut u : 1
+        write u ()
+    cut l : tree
+        write l 'empty(u)
+    cut u_ : 1
+        write u_ ()
+    cut r : tree
+        write r 'empty(u_)
+    call make_node d l n r
+
+proc inord (d : list) (t : tree) =
+    read t {
+    | 'empty(u) => write d 'nil(u)
+    | 'node(node) => read node (l, rest)
+                     read rest (data, r)
+                     cut left : list
+                        call inord left l
+                     cut right : list
+                        call inord right r
+                     cut q : nat * list
+                        write q (data, right)
+                     cut right_ : list
+                        write right_ 'cons(q)
+                     call append d left right_
+    }
+
+proc tree_ex (d : tree) =
+    cut o : nat
+        call one o
+    cut left : tree
+        call make_leaf left o
+    cut o_ : nat
+        call one o_
+    cut t : nat
+        write t 'succ(o_)
+    cut th : nat
+        write th 'succ(t)
+    cut right : tree
+        call make_leaf right th
+    cut o__ : nat
+        call one o__
+    cut t_ : nat
+        write t_ 'succ(o__)
+    call make_node d left t_ right
+
+proc inord_ex (d : list) =
+    cut t : tree
+        call tree_ex t
+    call inord d t
+
+// this fails because n and r are not used
+fail proc make_node_fail (d : tree) (l : tree) (n : nat) (r : tree) =
+    id d l
+

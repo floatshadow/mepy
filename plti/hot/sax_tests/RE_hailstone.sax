@@ -1,0 +1,209 @@
+type pos = +{'one : 1, 'succ : pos}
+type bool = +{'t : 1, 'f : 1}
+type list = +{'nil : 1, 'cons : pos * list}
+
+// type nat = +{'zero : 1, 'succ : nat}
+// type neg = +{'zero : 1, 'pred : neg}
+// type int = +{'zero : 1, 'succ : nat, 'pred : neg}
+
+proc not (d : bool) (b : bool) =
+  read b {
+  | 't(u) =>
+    write d 'f(u)
+  | 'f(u) =>
+    write d 't(u)
+  }
+
+proc free (d : 1) (a : pos) =
+  read a {
+  | 'one(u) =>
+    id d u
+  | 'succ(x) =>
+    call free d x
+  }
+
+proc dup (d : pos * pos) (a : pos) =
+  read a {
+  | 'one(u) =>
+    cut a_ : pos
+      write a_ 'one(u)
+    cut b : pos
+      cut u_ : 1
+      write u_ ()
+      write b 'one(u_)
+    write d (a_, b)
+  | 'succ(x) =>
+    cut e : pos * pos
+    call dup e x
+    read e (x, y)
+    cut a_ : pos
+      write a_ 'succ(x)
+    cut b : pos
+      write b 'succ(y)
+    write d (a_, b)
+  }
+
+proc eq (d : bool) (a : pos) (b : pos) =
+  read a {
+  | 'one(u) =>
+    read u ()
+    read b {
+    | 'one(u) =>
+      write d 't(u)
+    | 'succ(y) =>
+      cut u_ : 1
+      call free u_ y
+      write d 'f(u_)
+    }
+  | 'succ(x) =>
+    read b {
+    | 'one(u) =>
+      read u ()
+      cut u_ : 1
+      call free u_ x
+      write d 'f(u_)
+    | 'succ(y) =>
+      call eq d x y
+    }
+  }
+
+proc even (d : bool) (a : pos) =
+  read a {
+  | 'one(u) =>
+    write d 'f(u)
+  | 'succ(x) =>
+    cut b : bool
+    call even b x
+    call not d b
+  }
+
+// no such label 'zero
+fail proc halve_fail (d : pos) (a : pos) =
+  read a {
+  | 'one(u) =>
+    write d 'zero(u)
+  | 'succ(x) =>
+    read x {
+    | 'one(u) =>
+      write d 'one(u)
+    | 'succ(x) =>
+      call halve_fail d x
+    }
+  }
+
+// divide by two, rounding *up* (not down)
+// which shouldn't matter since we are only dividing the even numbers
+proc halve (d : pos) (a : pos) =
+  read a {
+  | 'one(u) =>
+    write d 'one(u)
+  | 'succ(x) =>
+    read x {
+    | 'one(u) =>
+      write d 'one(u)
+    | 'succ(x) =>
+      cut y : pos
+      call halve y x
+      write d 'succ(y)
+    }
+  }
+
+proc mul_three_add_one (d : pos) (a : pos) =
+  read a {
+  | 'one(u) =>
+    cut n1 : pos
+    write n1 'one(u)
+    cut n2 : pos
+    write n2 'succ(n1)
+    cut n3 : pos
+    write n3 'succ(n2)
+    write d 'succ(n3)
+  | 'succ(x) =>
+    cut n1 : pos
+    call mul_three_add_one n1 x
+    cut n2 : pos
+    write n2 'succ(n1)
+    cut n3 : pos
+    write n3 'succ(n2)
+    write d 'succ(n3)
+  }
+
+proc hailstone (d : list) (a : pos) =
+  cut p : pos * pos
+  call dup p a
+  read p (a, a$)
+  cut n1 : pos
+    cut u : 1
+    write u ()
+    write n1 'one(u)
+  cut b : bool
+  call eq b a$ n1
+  cut p_ : pos * pos
+  call dup p_ a
+  read p_ (a, a$)
+  cut tl : list
+  read b {
+  | 't(u) =>
+    read u ()
+    // don't forget to free!
+    cut u_ : 1
+    call free u_ a
+    write tl 'nil(u_)
+  | 'f(u) =>
+    read u ()
+    cut next : pos
+      cut p__ : pos * pos
+      call dup p__ a
+      read p__ (a, a$)
+      cut b__ : bool
+      call even b__ a$
+      read b__ {
+      | 't(u) =>
+        read u ()
+        call halve next a
+      | 'f(u) =>
+        read u ()
+        call mul_three_add_one next a
+      }
+    call hailstone tl next
+  }
+  cut p___ : pos * list
+  write p___ (a$, tl)
+  write d 'cons(p___)
+
+proc seven (d : pos) =
+  cut u : 1
+  write u ()
+  cut n1 : pos
+  write n1 'one(u)
+  cut n2 : pos
+  write n2 'succ(n1)
+  cut n3 : pos
+  write n3 'succ(n2)
+  cut n4 : pos
+  write n4 'succ(n3)
+  cut n5 : pos
+  write n5 'succ(n4)
+  cut n6 : pos
+  write n6 'succ(n5)
+  write d 'succ(n6)
+
+proc even_seven (d : bool) =
+  cut n7 : pos
+  call seven n7
+  call even d n7
+
+proc halve_seven (d : pos) =
+  cut n7 : pos
+  call seven n7
+  call halve d n7
+
+proc mul_three_add_one_seven (d : pos) =
+  cut n7 : pos
+  call seven n7
+  call mul_three_add_one d n7
+
+proc hailstone_seven (d : list) =
+  cut n7 : pos
+  call seven n7
+  call hailstone d n7

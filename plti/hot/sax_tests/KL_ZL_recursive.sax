@@ -1,0 +1,88 @@
+type nat = +{'zero : 1, 'succ : nat}
+type even = +{'zero : 1, 'succ : odd}
+type parity = +{'even: even, 'odd : odd}
+type bool = +{'false : 1, 'true : 1}
+type odd = +{'succ : even}
+type pair = nat * nat
+
+proc zero (d : nat) =
+  cut u : 1
+     write u ()
+  write d 'zero(u)
+
+proc succ (d : nat) (x : nat) =
+  write d 'succ(x)
+
+proc two (d : nat) = 
+  cut z : nat
+    call zero z
+  cut one : nat
+    call succ one z
+  call succ d one
+
+proc three (d : nat) = 
+  cut t : nat
+    call two t 
+  call succ d t
+
+proc dup_nat (d : pair) (x : nat) =
+  read x {
+  | 'zero(u) => read u ()
+                cut n1 : nat
+                cut u1 : 1
+                   write u1 ()
+                   write n1 'zero(u1)
+                cut n2 : nat
+                cut u2 : 1
+                   write u2 ()
+                   write n2 'zero(u2)
+                   write d (n1, n2)
+  | 'succ(x1) => cut p : pair
+                    call dup_nat p x1
+                    read p (y1, y2)
+                 cut n1 : nat
+                    write n1 'succ(y1)
+                 cut n2 : nat
+                    write n2 'succ(y2)
+                    write d (n1, n2)
+  }
+
+proc drop_nat (d : 1) (x : nat) =
+  read x {
+  | 'zero(u) => read u ()
+                write d ()
+  | 'succ(x1) => call drop_nat d x1
+}
+
+proc drop_even (d : 1) (x : even) =
+  read x {
+  | 'zero(u) => read u ()
+                write d ()
+  | 'succ(x1) => call drop_nat d x1
+}
+
+/* Run the tests */
+proc is_even_even (d : bool) (n : nat) = 
+  read n {
+  | 'zero(u) => write d 'true(u)
+  | 'succ(n) => call is_even_odd d n 
+  }
+
+proc is_even_odd (d : bool) (n : nat) =
+  read n {
+  | 'zero(u) => write d 'false(u)
+  | 'succ(n) => call is_even_even d n 
+  }
+
+proc is_even (d : bool) (n : nat) = 
+  call is_even_even d n
+
+proc test_two (d : bool) =
+  cut n : nat
+    call two n
+  call is_even d n
+
+proc test_three (d : bool) =
+  cut f : nat
+    call three f
+  call is_even d f 

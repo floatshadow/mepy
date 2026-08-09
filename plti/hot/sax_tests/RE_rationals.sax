@@ -1,0 +1,230 @@
+type nat = +{'zero : 1, 'succ : nat}
+
+proc dealloc_nat (d : 1) (n : nat) =
+    read n {
+    | 'zero(u) => id d u
+    | 'succ(n0) => call dealloc_nat d n0
+    }
+proc dup_nat (d : nat * nat) (n : nat) =
+    read n {
+    | 'zero(u) => cut d1 : nat
+                    write d1 'zero(u)
+                  cut d2 : nat
+                    cut w : 1
+                        write w ()
+                    write d2 'zero(w)
+                  write d (d1, d2)
+    | 'succ(n0) => cut res : nat * nat
+                     call dup_nat res n0
+                   read res (n1, n2)
+                   cut d1 : nat
+                     write d1 'succ(n1)
+                   cut d2 : nat
+                     write d2 'succ(n2)
+                   write d (d1, d2)
+    }
+proc sub (d : nat) (n : nat) (m : nat) =
+    read m {
+    | 'zero(u) => read u () id d n
+    | 'succ(m0) => read n {
+                   | 'zero(u) => cut w : 1
+                                   call dealloc_nat w m0
+                                 read w ()
+                                 write d 'zero(u)
+                   | 'succ(n0) => call sub d n0 m0
+                   }
+    }
+
+type bool = +{'false : 1, 'true : 1}
+proc not (d : bool) (b : bool) =
+    read b {
+    | 'true(u) => write d 'false(u)
+    | 'false(u) => write d 'true(u)
+    }
+
+proc leq (d : bool) (n : nat) (m : nat) =
+    cut res : nat
+      call sub res n m
+    read res {
+    | 'zero(u) => write d 'true(u)
+    | 'succ(res0) => cut w : 1
+                       call dealloc_nat w res0
+                     write d 'false(w)
+    }
+
+proc eq (d : bool) (n : nat) (m : nat) =
+  read n {
+    | 'zero(u) => read m {
+                   | 'zero(w) => read u () write d 'true(w)
+                   | 'succ(m0) => read u ()
+                                  cut w : 1
+                                    call dealloc_nat w m0
+                                  write d 'false(w)
+                  }
+    | 'succ(n0) => read m {
+                    | 'zero(u) => read u ()
+                                  cut w : 1
+                                    call dealloc_nat w n0
+                                  write d 'false(w)
+                    | 'succ(m0) => call eq d n0 m0
+                   }
+  }
+proc le (d : bool) (n : nat) (m : nat) =
+  read m {
+    | 'zero(u) => read u () 
+                  cut w : 1
+                    call dealloc_nat w n
+                  write d 'false(w)
+    | 'succ(m0) => read n {
+                     | 'zero(u) => read u ()
+                                   cut w : 1
+                                     call dealloc_nat w m0
+                                   write d 'true(w)
+                     | 'succ(n0) => call le d n0 m0
+                   }
+  }
+
+/*
+fun GCD (m, 0) = m
+  | GCD (m, n) =
+    if m > n then
+        GCD (m - n, n)
+    else
+        GCD (n, m)
+*/
+
+proc gcd (d : nat) (m : nat) (n : nat) =
+    cut ms : nat * nat
+      call dup_nat ms m
+    read ms (m1, m)
+    cut ns : nat * nat
+      call dup_nat ns n
+    read ns (n1, n)
+    cut equal : bool
+      call eq equal n1 m1
+    read equal {
+      | 'true(u) => read u ()
+                    cut w : 1
+                      call dealloc_nat w n
+                    read w ()
+                    id d m
+      | 'false(u) => read u ()
+                     read n {
+                      | 'zero(u) => read u () id d m
+                      | 'succ(n0) => cut n_ : nat
+                                      write n_ 'succ(n0)
+                                    cut ns_ : nat * nat
+                                      call dup_nat ns_ n_
+                                    read ns_ (n1, n2)
+                                    cut ms_ : nat * nat
+                                      call dup_nat ms_ m
+                                    read ms_ (m1, m2)
+                                    cut mleqn : bool
+                                      call leq mleqn m1 n1
+                                    cut mgen : bool
+                                      call not mgen mleqn
+                                    read mgen {
+                                    | 'true(u) => read u ()
+                                                  cut ns__ : nat * nat
+                                                      call dup_nat ns__ n2
+                                                  read ns__ (n1, n2)
+                                                  cut msubn : nat
+                                                      call sub msubn m2 n1
+                                                  call gcd d msubn n2
+                                    | 'false(u) => read u ()
+                                                    call gcd d n2 m2
+                                    }
+                    }
+    }
+
+proc div (d : nat) (n : nat) (m : nat) =
+    read n {
+    | 'zero(u) => read u ()
+                  cut w : 1
+                    call dealloc_nat w m
+                  write d 'zero(w)
+    | 'succ(n0) => cut n_ : nat
+                     write n_ 'succ(n0)
+                   cut ns : nat * nat
+                     call dup_nat ns n_
+                   read ns (n1, n2)
+                   cut ms : nat * nat
+                     call dup_nat ms m
+                   read ms (m1, m2)
+                   cut nlem : bool
+                     call le nlem n1 m1
+                   read nlem {
+                    | 'true(u) => cut w : 1
+                                    call dealloc_nat w n2
+                                  cut v : 1
+                                    call dealloc_nat v m2
+                                  read w () read v ()
+                                  write d 'zero(u)
+                    | 'false(u) => read u ()
+                                   cut ms_ : nat * nat
+                                     call dup_nat ms_ m2
+                                   read ms_ (m1, m2)
+                                   cut diff : nat
+                                     call sub diff n2 m1
+                                   cut res : nat
+                                     call div res diff m2
+                                   write d 'succ(res)
+                                   
+                   }
+    }
+
+type rat = nat * nat
+proc make_rat (d : rat) (num : nat) (denom : nat) =
+  cut nums : nat * nat
+    call dup_nat nums num
+  read nums (num1, num2)
+  cut denoms : nat * nat
+    call dup_nat denoms denom
+  read denoms (denom1, denom2)
+  cut gcd_factor : nat
+    call gcd gcd_factor num1 denom1
+  cut facs : nat * nat
+    call dup_nat facs gcd_factor
+  read facs (f1, f2)
+  cut top : nat
+    call div top num2 f1
+  cut bottom : nat
+    call div bottom denom2 f2
+  write d (top, bottom)
+
+proc zero (d : nat) =
+    cut u : 1
+        write u ()
+    write d 'zero(u)
+
+proc one (d : nat) =
+    cut z : nat
+        call zero z
+    write d 'succ(z)
+
+proc two (d : nat) =
+    cut z : nat
+        call one z
+    write d 'succ(z)
+
+proc one_half (d : rat) =
+  cut top : nat
+    call one top
+  cut bottom : nat
+    call two bottom
+  call make_rat d top bottom
+
+
+proc four (d : nat) =
+  cut t : nat
+    call two t
+  cut th : nat
+    write th 'succ(t)
+  write d 'succ(th)
+
+proc two_fourths (d : rat) =
+  cut top : nat
+    call two top
+  cut bottom : nat
+    call four bottom
+  call make_rat d top bottom

@@ -1,0 +1,41 @@
+proc assocl (d : (1 * 1) * 1) (s : 1 * (1 * 1)) =
+  read s (a, b)
+  read b (b, c)
+  cut e : 1 * 1
+    write e (a, b)
+  write d (e, c)
+
+proc assocr (d : 1 * (1 * 1)) (s : (1 * 1) * 1) =
+  read s (a, b)
+  read a (a, c)
+  cut e : 1 * 1
+    write e (c, b)
+  write d (a, e)
+
+proc a (d : (1 * 1) * (1 * 1)) (s : ((1 * 1) * 1) * 1) = read s (a, b)
+  read a (a, c)
+  cut e : 1 * 1
+    write e (c, b)
+  write d (a, e)
+
+proc b (d : 1 * (1 * (1 * 1))) (s : (1 * 1) * (1 * 1)) = read s (a, b)
+  read a (a, c)
+  cut e : 1 * (1 * 1)
+    write e (c, b)
+  write d (a, e)
+
+proc c (d : (1 * (1 * 1)) * 1) (s : ((1 * 1) * 1) * 1) = read s (a, b)
+  cut c : 1 * (1 * 1)
+    call assocr c a
+  write d (c, b)
+
+proc d (d : 1 * ((1 * 1) * 1)) (s : (1 * (1 * 1)) * 1) = read s (a, b)
+  read a (a, c)
+  cut e : (1 * 1) * 1
+    write e (c, b)
+  write d (a, e)
+
+proc e (d : 1 * (1 * (1 * 1))) (s : 1 * ((1 * 1) * 1)) = read s (a, b)
+  cut c : 1 * (1 * 1)
+    call assocr c b
+  write d (a, c)

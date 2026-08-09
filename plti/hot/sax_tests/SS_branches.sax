@@ -1,0 +1,12 @@
+// should not work, duplicate branching
+type nat = +{'zero : 1, 'succ : 1}
+
+fail proc dealloc (d : 1) (n : nat) =
+    read n {
+    | 'zero(u) => id d u
+    | 'succ(m) => call dealloc d m
+    | 'succ(k) => 
+        cut u : 1
+            call dealloc u k
+        id d u
+    }

@@ -1,0 +1,24 @@
+type nat = +{ 'zero: 1, 'suc: nat }
+type bool = +{ 'false: 1, 'true: 1 }
+
+proc const_zero (out : nat) =
+    cut unit : 1
+        write unit ()
+    write out 'zero(unit)
+
+fail proc copy (out : nat * nat) (in : nat) =
+    read in {
+        | 'zero(unit) =>
+            // read unit ()
+            cut a : nat call const_zero a
+            cut b : nat call const_zero b
+            write out (a, b)
+
+        | 'suc(in_prev) =>
+            cut tmp : nat * nat
+                call copy tmp in_prev
+            read tmp (a, b)
+            cut a_suc : nat write a_suc 'suc(a)
+            cut b_suc : nat write b_suc 'suc(b)
+            write out (a_suc, b_suc)
+    }

@@ -1,0 +1,6 @@
+type nat = +{'zero : 1, 'succ : nat}
+
+proc zero (d : nat) =
+    cut u : 1
+        write u ()
+    write d 'zero (u)

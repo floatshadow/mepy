@@ -1,0 +1,17 @@
+// This file is supposed to fail the fail tactic
+// The reference compiler seems buggy
+
+
+
+type nat = +{'zero : 1, 'succ : nat}
+
+fail proc plus (d : nat) (a : nat) (b : nat) = 
+    read a {
+        | 'zero(a) => 
+                read a () 
+                id d b
+        | 'succ(a) =>
+            cut d2 : nat
+                call plus d2 a b
+            write d 'succ(d2)
+    }

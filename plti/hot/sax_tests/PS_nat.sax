@@ -1,0 +1,99 @@
+type unat = +{'zero : 1, 'succ : unat}
+
+proc copy (p : unat * unat) (n : unat) =
+  read n {
+  | 'zero(u) => cut n_ : unat
+                  write n_ 'zero(u)
+                cut m : unat
+                  cut u_ : 1
+                    write u_ ()
+                  write m 'zero(u_)
+                write p (n_, m)
+  | 'succ(n) => cut q : unat * unat
+                  call copy q n
+                read q (l, k)
+                cut n_ : unat
+                  write n_ 'succ(l)
+                cut m : unat
+                  write m 'succ(k)
+                write p (n_, m)
+  }
+
+type bnat = +{'e : 1, 'b0 : pbnat, 'b1 : bnat}
+type pbnat = +{'b0 : pbnat, 'b1 : bnat}
+
+proc subtype (d : bnat) (s : pbnat) =
+  id d s
+
+fail proc not_subtype (d : pbnat) (s : bnat) =
+  id d s
+
+proc bsucc (d : pbnat) (s : bnat) =
+  read s {
+  | 'e(u) => cut n : bnat
+               write n 'e(u)
+             write d 'b1(n)
+  | 'b0(s) => write d 'b1(s)
+  | 'b1(s) => cut n : pbnat
+                call bsucc n s
+              write d 'b0(n)
+  }
+
+proc unary_to_binary (d : bnat) (s : unat) =
+  read s {
+  | 'zero(u) => write d 'e(u)
+  | 'succ(s) => cut n : bnat
+                  call unary_to_binary n s
+                call bsucc d n
+  }
+
+proc add (k : unat) (n : unat) (m : unat) =
+  read m {
+  | 'zero(u) => read u ()
+                id k n
+  | 'succ(m) => cut l : unat
+                  call add l n m
+                write k 'succ(l)
+  }
+
+proc binary_to_unary (d : unat) (s : bnat) =
+  read s {
+  | 'e(u) => write d 'zero(u)
+  | 'b0(s) => cut n : unat
+                call binary_to_unary n s
+              cut p : unat * unat
+                call copy p n
+              read p (n, m)
+              call add d n m
+  | 'b1(s) => cut n : unat
+                call binary_to_unary n s
+              cut p : unat * unat
+                call copy p n
+              read p (n, m)
+              cut k : unat
+                call add k n m
+              write d 'succ(k)
+  }
+
+proc binary_ten (x : bnat) =
+  cut u : 1
+    write u ()
+  cut a : bnat
+    write a 'e(u)
+  cut w : pbnat 
+    write w 'b1(a)
+  cut z : bnat
+    write z 'b0(w)
+  cut y : pbnat
+    write y 'b1(z)
+  write x 'b0(y)
+
+proc unary_ten (x : unat) =
+  cut y : bnat
+    call binary_ten y
+  call binary_to_unary x y
+
+proc binary_ten_ (x : bnat) =
+  cut y : unat
+    call unary_ten y
+  call unary_to_binary x y

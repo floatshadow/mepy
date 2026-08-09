@@ -1,0 +1,74 @@
+/* Increment and add natural numbers. */
+
+type nat = +{'zero : 1, 'succ : nat}
+
+/* Increment a natural number */
+proc inc (d : nat) (x : nat) =
+  write d 'succ(x)
+
+/* Add two natural numbers */
+proc add (d : nat) (x : nat) (y : nat) =
+  read x {
+    /* If there is nothing left to add, copy y into d. */
+    | 'zero(u) =>
+	read u ()
+	id d y
+    /* Otherwise, recursively call on x's predecessor and increment. */
+    | 'succ(x1) =>
+	cut d1 : nat
+	  call add d1 x1 y
+	call inc d d1
+  }
+
+/* BEGIN TESTS */
+
+/* Create some natural numbers */
+proc zero (d : nat) =
+  cut z : 1
+    write z ()
+  write d 'zero(z)
+
+proc one (d : nat) =
+  cut z : nat
+    call zero z
+  call inc d z
+
+proc two (d : nat) =
+  cut o : nat
+    call one o
+  call inc d o
+
+proc six (d : nat) =
+  cut t : nat
+    call two t
+  cut three : nat
+    call inc three t
+  cut four : nat
+    call inc four three
+  cut five : nat
+    call inc five four
+  call inc d five
+
+/* Add some numbers */
+proc one_plus_one (d : nat) =
+  cut one1 : nat
+    call one one1
+  cut one2 : nat
+    call one one2
+  call add d one1 one2
+
+proc zero_plus_one (d : nat) =
+  cut z : nat
+    call zero z
+  cut o : nat
+    call one o
+  call add d z o
+
+proc two_plus_six (d : nat) =
+  cut t : nat
+    call two t
+  cut s : nat
+    call six s
+  call add d t s
+  
+

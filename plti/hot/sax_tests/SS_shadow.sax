@@ -1,0 +1,17 @@
+// should work, valid shadowing
+type ten = +{'one : 1, 'two : 1, 'three : 1, 'four : 1, 'five : 1, 'six : 1, 'seven : 1, 'eight : 1, 'nine : 1, 'ten : 1}
+
+// re #20 on Ed, I expect this to work but it doesn't, so it's wrapped in a fail
+fail proc deallocTen (d : 1) (t : ten) (u : 1) =
+    read t {
+    | 'one(u) => id d u
+    | 'two(u) => id d u
+    | 'three(u) => id d u
+    | 'four(u) => id d u
+    | 'five(u) => id d u
+    | 'six(u) => id d u
+    | 'seven(u) => id d u
+    | 'eight(u) => id d u
+    | 'nine(u) => id d u
+    | 'ten(u) => id d u
+    }

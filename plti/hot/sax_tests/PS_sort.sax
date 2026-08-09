@@ -1,0 +1,108 @@
+type unat = +{'zero : 1, 'succ : unat}
+
+proc copy (p : unat * unat) (n : unat) =
+  read n {
+  | 'zero(u) => cut n_ : unat
+                  write n_ 'zero(u)
+                cut m : unat
+                  cut u_ : 1
+                    write u_ ()
+                  write m 'zero(u_)
+                write p (n_, m)
+  | 'succ(n) => cut q : unat * unat
+                  call copy q n
+                read q (l, k)
+                cut n_ : unat
+                  write n_ 'succ(l)
+                cut m : unat
+                  write m 'succ(k)
+                write p (n_, m)
+  }
+
+proc drop (u : 1) (n : unat) =
+  read n {
+  | 'zero(v) => id u v
+  | 'succ(n) => call drop u n
+  }
+
+type bool = +{'true : 1, 'false : 1}
+
+proc le (b : bool) (n : unat) (m : unat) =
+  read n {
+  | 'zero(u) => read u ()
+                cut u_ : 1
+                  call drop u_ m
+                write b 'true(u_)
+  | 'succ(n) => read m {
+                | 'zero(u) => read u ()
+                              cut u_ : 1
+                                call drop u_ n
+                              write b 'false(u_)
+                | 'succ(m) => call le b n m
+                }
+  }
+
+type list = +{'nil : 1, 'cons : unat * list}
+
+proc insert (d : list) (n : unat) (l : list) =
+  read l {
+  | 'nil(u) => cut nil : list
+                 write nil 'nil(u)
+               cut p : unat * list
+                 write p (n, nil)
+               write d 'cons(p)
+  | 'cons(p) => read p (m, l)
+                cut p_ : unat * unat
+                  call copy p_ n
+                read p_ (n, n1)
+                cut p__ : unat * unat
+                  call copy p__ m
+                read p__ (m, m1)
+                cut b : bool
+                  call le b n1 m1
+                read b {
+                | 'true(u) => read u ()
+                              cut p___ : unat * list
+                                write p___ (m, l)
+                              cut tl : list
+                                write tl 'cons(p___)
+                              cut p____ : unat * list
+                                write p____ (n, tl)
+                              write d 'cons(p____)
+                | 'false(u) => read u ()
+                               cut tl : list
+                                 call insert tl n l
+                               cut sps : unat * list
+                                 write sps (m, tl)
+                               write d 'cons(sps)
+                }
+  }
+
+proc sort (d : list) (s : list) =
+  read s {
+  | 'nil(u) => write d 'nil(u)
+  | 'cons(p) => read p (x, l)
+                cut tl : list
+                  call sort tl l
+                call insert d x tl
+  }
+
+proc zero (n : unat) = cut u : 1 write u () write n 'zero(u)
+proc one (n : unat) = cut m : unat call zero m write n 'succ(m)
+proc two (n : unat) = cut m : unat call one m write n 'succ(m)
+proc three (n : unat) = cut m : unat call two m write n 'succ(m)
+proc four (n : unat) = cut m : unat call three m write n 'succ(m)
+
+// bug if you replace l1 with l
+fail proc input (d : list) =
+  cut l : list cut u : 1 write u () write l 'nil(u)
+  cut l1 : list cut p : unat * list cut n : unat call zero n write p (n, l) write l1 'cons(p)
+  cut l : list cut p : unat * list cut n : unat call two n write p (n, l1) write l 'cons(p)
+  cut l1 : list cut p : unat * list cut n : unat call three n write p (n, l) write l1 'cons(p)
+  cut l : list cut p : unat * list cut n : unat call one n write p (n, l1) write l 'cons(p)
+  cut p : unat * list cut n : unat call four n write p (n, l) write d 'cons(p)
+
+fail proc output (d : list) =
+  cut s : list
+    call input s
+  call sort d s

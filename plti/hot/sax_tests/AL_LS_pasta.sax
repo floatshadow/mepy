@@ -1,0 +1,81 @@
+/* Example of using and reading from "structs" */
+
+type nat = +{'zero : 1, 'succ : nat}
+
+type temperature = +{'celsius : nat, 'fahrenheit : nat}
+
+/* Typedefs must be contractive */
+fail type water_level = nat
+type water_level = +{'zero : 1, 'one : 1, 'two : 1}
+
+type pasta = +{'fusilli : 1, 'penne : 1, 'rigatoni : 1, 'linguine : 1}
+type pasta_opt = +{'none : 1, 'some : pasta}
+
+type pasta_pot = pasta_opt * (temperature * water_level)
+
+proc zero (d : nat) =
+  cut u : 1
+    write u ()
+  write d 'zero(u)
+
+/* Create an empty pasta pot */
+proc new_pot (d : pasta_pot) =
+  cut w : water_level
+    cut u : 1
+      write u ()
+    write w 'zero(u)
+  cut t : temperature
+    cut u : nat
+      call zero u
+    write t 'fahrenheit(u)
+  cut p_opt : pasta_opt
+    cut u : 1
+      write u ()
+    write p_opt 'none(u)
+  cut t_w : temperature * water_level
+    write t_w (t, w)
+  write d (p_opt, t_w)
+
+/* Deallocate a pasta option */
+proc dealloc_pasta_opt (d : 1) (p : pasta_opt) =
+  read p {
+  | 'none(u) => id d u
+  | 'some(p) =>
+      read p {
+      | 'fusilli(u) => id d u
+      | 'penne(u) => id d u
+      | 'rigatoni(u) => id d u
+      | 'linguine(u) => id d u
+      }
+  }
+      
+/* Add pasta to the pot. Replaces current pasta. */
+proc add_pasta (d : pasta_pot) (p : pasta) (pot : pasta_pot) =
+  read pot (pasta_in_pot, levels)
+  cut u : 1
+    call dealloc_pasta_opt u pasta_in_pot
+  read u ()
+  read levels (temp, water)
+  cut t_w : temperature * water_level
+    write t_w (temp, water)
+  cut p_opt : pasta_opt
+    write p_opt 'some(p)
+  write d (p_opt, t_w)
+
+/* Adds water to the pot. If it exceeds level 2, this fails to add water. */
+proc add_water (d : pasta_pot) (pot : pasta_pot) =
+  read pot (pasta_in_pot, levels)
+  read levels (temp, water_level)
+  cut new_water_level : water_level
+    read water_level {
+    | 'zero(u) =>
+        write new_water_level 'one(u)
+    | 'one(u) =>
+        write new_water_level 'two(u)
+    | 'two(u) =>
+        write new_water_level 'two(u)
+    }
+  cut new_levels : temperature * water_level
+    write new_levels (temp, new_water_level)
+  write d (pasta_in_pot, new_levels)
+

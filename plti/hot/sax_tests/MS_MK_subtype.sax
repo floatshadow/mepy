@@ -1,0 +1,89 @@
+type nat = +{ 'zero : 1, 'succ : nat }
+
+type pos = +{ 'succ : nat }
+
+type int = +{ 'zero : 1, 'succ : nat, 'neg : pos }
+
+proc one (d : pos) =
+  cut u : 1
+    write u ()
+    cut z : nat
+      write z 'zero(u)
+      write d 'succ(z)
+
+proc one_nat (d : nat) =
+  call one d
+
+proc one_int (d : int) =
+  call one d
+
+proc one_int_from_nat (d : int) =
+  call one_nat d
+
+proc abs (d : nat) (n : int) =
+  read n {
+  | 'zero(u) => write d 'zero(u)
+  | 'succ(s) => write d 'succ(s)
+  | 'neg(a)  => id d a
+  }
+
+proc minus_one (d : int) =
+  cut n : pos
+    call one n
+    write d 'neg(n)
+
+proc abs_one (d : nat) =
+  cut n : int
+    call minus_one n
+    call abs d n
+
+fail proc one_nat_from_int (d : nat) =
+  cut o : int
+    call one_int o
+    id d o
+
+fail proc one_nat_from_pos (d : nat) =
+  cut o : pos
+    call one_int o
+    id d o
+
+type colors = +{ 'red : 1, 'orange : 1, 'yellow : 1, 'green : 1, 'blue : 1, 'purple : 1 }
+
+type primary = +{ 'red : 1, 'yellow : 1, 'blue : 1 }
+
+proc color1 (d : colors) (a : colors) =
+  id d a
+
+proc color2 (d : colors) (a : primary) =
+  id d a
+
+proc color_test1 (d : colors) =
+  cut u : 1
+    write u ()
+    cut a : primary
+      write a 'red(u)
+      call color1 d a
+
+proc color_test2 (d : colors) =
+  cut u : 1
+    write u ()
+    cut a : primary
+      write a 'red(u)
+      call color2 d a
+
+proc color_test3 (d : colors) =
+  cut u : 1
+    write u ()
+    cut a : colors
+      write a 'green(u)
+      call color1 d a
+
+fail proc color_test4 (d : colors) =
+  cut u : 1
+    write u ()
+    cut a : colors
+      write a 'green(u)
+      call color2 d a
+
+fail proc color3 (d : primary) (a : colors) =
+  id d a

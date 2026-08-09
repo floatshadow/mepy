@@ -1,0 +1,5 @@
+/* Fail: types cannot be contractive */
+
+type nat = +{'zero : 1, 'succ : nat}
+
+fail type alias = nat

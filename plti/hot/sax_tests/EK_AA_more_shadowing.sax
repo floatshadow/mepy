@@ -1,0 +1,32 @@
+fail proc f (d : 1) (x : 1) (y : 1) =
+    read x ()
+    cut x : 1
+        cut y : 1
+            write y ()
+        read y ()
+        write x ()
+    read x ()
+    read y ()
+    write d ()
+
+fail proc fd (d : 1) (x : 1) (y : 1) =
+    read x ()
+    cut x : 1
+        cut x : 1
+            write x ()
+        id x x
+    read x ()
+    read y ()
+    write d ()
+
+fail type a = a
+
+type b = 1
+fail type c = b
+
+fail proc t (d : 1) =
+    cut x : 1
+        write x ()
+    cut y : b
+        write y ()
+    call f d x y

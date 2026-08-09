@@ -1,0 +1,12 @@
+
+fail type aType = +{'yes : 1, 'yes : 1}
+
+fail type bType = +{'yes : 1, 'no : 1, 'yes : 1}
+
+fail type cType = +{'ok : +{'yes : 1, 'no : 1, 'yes : 1}}
+
+type dType = +{'yes : +{'yes : 1, 'no : 1}}
+
+fail type eType = +{'ok : +{'ok : +{'ok : +{'yes : 1, 'no : 1, 'yes : 1}}}}
+
+fail type fType = +{'yes : 1, 'no : +{'ok : +{'ok : +{'ok : +{'yes : 1, 'no : 1, 'yes : 1}}}}}

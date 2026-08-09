@@ -1,0 +1,12 @@
+
+fail type aType = +{'succ : 1, 'zero : bla}
+
+fail type bType = +{'succ : +{'yes : bla, 'no : bla}, 'zero : 1}
+
+fail type cType = +{'yes : +{'succ : +{'yes : bla, 'no : bla}, 'zero : 1}}
+
+fail proc zero (d : bla) = 
+    cut u : 1
+        write u ()
+    write d 'e(u)
+

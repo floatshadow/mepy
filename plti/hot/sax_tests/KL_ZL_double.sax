@@ -1,0 +1,84 @@
+type bin = +{'b0 : bin, 'b1 : bin, 'e : 1}
+
+proc zero (d : bin) =
+  cut u : 1
+    write u ()
+  write d 'e(u)
+
+proc one (d : bin) =
+  cut x : bin
+    call zero x
+  write d 'b1(x)
+
+proc succ (d : bin) (x : bin) =
+  read x {
+  | 'b0(x0) => write d 'b1(x0)
+  | 'b1(x1) => cut y : bin
+                  call succ y x1
+               write d 'b0(y)
+  | 'e(u) => read u ()
+             call one d
+  }
+
+proc add (d : bin) (x : bin) (y : bin) =
+  read x {
+  | 'b0(x0) => read y {
+               | 'b0(y0) => cut d1 : bin
+                               call add d1 x0 y0
+                            write d 'b0(d1)
+               | 'b1(y0) => cut d1 : bin
+                               call add d1 x0 y0
+                            write d 'b1(d1)
+               | 'e(u) => read u ()
+                          write d 'b0(x0)
+               }
+  | 'b1(x0) => read y {
+               | 'b0(y0) => cut d1 : bin
+                               call add d1 x0 y0
+                            write d 'b1(d1)
+               | 'b1(y0) => cut d1 : bin
+                               call add d1 x0 y0
+                            cut d2 : bin
+                               call succ d2 d1
+                            write d 'b0(d2)
+               | 'e(u) => read u ()
+                          write d 'b1(x0)
+               }
+  | 'e(u) => read u ()
+             id d y
+  }
+
+proc dup_bin (d : bin * bin) (x : bin) =
+  read x {
+  | 'b0(x) => cut y : bin * bin
+                 call dup_bin y x
+              read y (y1, y2)
+              cut d1 : bin
+                write d1 'b0(y1)
+              cut d2 : bin
+                write d2 'b0(y2)
+              write d (d1, d2)
+  | 'b1(x) => cut y : bin * bin
+                 call dup_bin y x
+              read y (y1, y2)
+              cut d1 : bin
+                write d1 'b1(y1)
+              cut d2 : bin
+                write d2 'b1(y2)
+              write d (d1, d2)
+  | 'e(u) => cut d1 : bin
+                write d1 'e(u)
+             cut d2 : bin
+                cut w : 1
+                   write w ()
+                write d2 'e(w)
+             write d (d1, d2)
+  }
+
+proc test_double (d: bin) =
+ cut x: bin
+    call one x
+ cut p: bin * bin
+    call dup_bin p x
+ read p (x1, x2)
+ call add d x1 x2

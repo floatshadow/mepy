@@ -1,0 +1,82 @@
+type nat = +{'zero : 1, 'succ : unary}
+type unary = +{'zero : 1, 'succ : nat}
+
+type othernat = +{'zero : 1, 'succ : othernat}
+
+type deepnat = +{'zero : 1, 'succ : +{'zero : 1, 'succ : deepnat}}
+
+fail type epicnat = +{'zero : 1, 'zero : 1}
+
+type z = +{'zero : 1}
+
+proc zero (d : z) =
+    cut u : 1
+        write u ()
+    write d 'zero(u)
+
+proc one (d : nat) =
+    cut z : unary
+        call zero z
+    write d 'succ(z)
+
+proc another (d : unary) =
+    cut o : othernat
+        call one o
+    write d 'succ(o)
+
+fail proc notquite (d : z) =
+    cut z : nat
+        call zero z
+    id d z
+
+proc swish (d : nat) (e : unary) =
+    id d e
+
+proc swosh (d : unary) (e : nat) =
+    id d e
+
+proc swash (d : othernat) (e : unary) =
+    id d e
+
+proc swesh (d : unary) (e : othernat) =
+    id d e
+
+proc swush (d : unary) (e : z) =
+    id d e
+
+proc ds (d : nat) (e : deepnat) =
+    id d e
+
+proc sd (d : deepnat) (e : nat) =
+    id d e
+
+proc dn (d : 1) (n : nat) =
+    read n {
+    | 'zero(u) => id d u
+    | 'succ(p) => call dn d p
+    }
+
+proc test (d : z) =
+    cut n : nat
+        call another n
+    cut m : unary
+        call swish m n
+    cut m2 : deepnat
+        call swosh m2 m
+    cut m3 : deepnat
+        call swash m3 m2
+    cut m4 : othernat
+        call swesh m4 m3
+    cut m5 : deepnat
+        call swesh m5 m4
+    cut m6 : unary
+        call ds m6 m5
+    cut m7 : othernat
+        call sd m7 m6
+    read m7 {
+    | 'zero(u) => write d 'zero(u)
+    | 'succ(n) => cut u : 1
+                      call dn u n
+                  write d 'zero(u)
+    }
+    

@@ -1,0 +1,53 @@
+type nat = +{ 'zero: 1, 'suc: nat }
+type bool = +{ 'false: 1, 'true: 1 }
+
+proc const_zero (out : nat) =
+    cut unit : 1
+        write unit ()
+    write out 'zero(unit)
+
+proc add (out : nat) (a : nat) (b : nat) =
+    read a {
+        | 'zero(unit) =>
+            read unit ()
+            id out b
+        | 'suc(a_prev) =>
+            cut tmp : nat
+                call add tmp a_prev b
+            write out 'suc(tmp)
+    }
+
+proc copy (out : nat * nat) (in : nat) =
+    read in {
+        | 'zero(unit) =>
+            read unit ()
+            cut a : nat call const_zero a
+            cut b : nat call const_zero b
+            write out (a, b)
+
+        | 'suc(in_prev) =>
+            cut tmp : nat * nat
+                call copy tmp in_prev
+            read tmp (a, b)
+            cut a_suc : nat write a_suc 'suc(a)
+            cut b_suc : nat write b_suc 'suc(b)
+            write out (a_suc, b_suc)
+    }
+
+fail proc mul (out : nat) (a : nat) (b : nat) =
+    read a {
+        // 0 * b = 0
+        | 'zero(unit) =>
+            read unit ()
+            // Fail: should use b
+            call const_zero out
+
+        // suc a_prev * b = b + (a_prev * b)
+        | 'suc(a_prev) =>
+            cut b_copy : nat * nat
+                call copy b_copy b
+            read b_copy (b1, b2)
+            cut tmp : nat
+                call mul tmp a_prev b1
+            call add out b2 tmp
+    }

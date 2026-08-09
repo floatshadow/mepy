@@ -1,0 +1,197 @@
+type nat = +{'zero : 1, 'succ : nat}
+type pos = +{'succ : nat}
+
+// 'mono(k) = k (a constant positive number)
+// 'term(k, p) = k + px
+// i.e. little-endian list, so 5 + 6x + 3x^3 => [5, 6, 0, 3]
+type pos_poly = +{'mono : pos, 'term : nat * pos_poly}
+type poly = +{'zero : 1, 'pos : pos_poly}
+
+// interestingly, zero is a subtype of nat and of poly but nat is not a subtype of poly
+type zero = +{'zero : 1}
+
+// totally fine for type and proc have the same name
+proc zero (d : zero) =
+  cut u : 1
+  write u ()
+  write d 'zero(u)
+
+proc add_nat_nat (d : nat) (a : nat) (b : nat) =
+  read a {
+  | 'zero(u) =>
+    read u ()
+    id d b
+  | 'succ(x) =>
+    cut y : nat
+    call add_nat_nat y x b
+    write d 'succ(y)
+  }
+
+proc add_pos_nat (d : pos) (a : pos) (b : nat) =
+  read a {
+  | 'succ(x) =>
+    cut y : nat
+    call add_nat_nat y x b
+    write d 'succ(y)
+  }
+
+proc add_nat_pos (d : pos) (a : nat) (b : pos) =
+  call add_pos_nat d b a
+
+proc add_pos_pos (d : pos) (a : pos) (b : pos) =
+  call add_pos_nat d a b
+
+proc add_pos_poly_pos_poly (d : pos_poly) (p : pos_poly) (q : pos_poly) =
+  read p {
+  | 'mono(a) =>
+    read q {
+    | 'mono(b) =>
+      cut c : pos
+      call add_pos_pos c a b
+      write d 'mono(c)
+    | 'term(bq) =>
+      read bq (b, q)
+      cut c : nat
+      call add_nat_nat c a b
+      cut cq : nat * pos_poly
+      write cq (c, q)
+      write d 'term(cq)
+    }
+  | 'term(ap) =>
+    read ap (a, p)
+    read q {
+    | 'mono(b) =>
+      cut c : nat
+      call add_nat_nat c a b
+      cut cp : nat * pos_poly
+      write cp (c, p)
+      write d 'term(cp)
+    | 'term(bq) =>
+      read bq (b, q)
+      cut c : nat
+      call add_nat_nat c a b
+      cut r : pos_poly
+      call add_pos_poly_pos_poly r p q
+      cut cr : nat * pos_poly
+      write cr (c, r)
+      write d 'term(cr)
+    }
+  }
+
+proc add_poly_poly (d : poly) (p : poly) (q : poly) =
+  read p {
+  | 'zero(u) =>
+    read u ()
+    id d q
+  | 'pos(p) =>
+    read q {
+    | 'zero(u) =>
+      read u ()
+      write d 'pos(p)
+    | 'pos(q) =>
+      cut r : pos_poly
+      call add_pos_poly_pos_poly r p q
+      write d 'pos(r)
+    }
+  }
+
+proc n1 (d : pos) =
+  // also completely okay to have conflicting variable, type, and proc names
+  // because they never syntactically coincide
+  cut zero : zero
+  call zero zero
+  write d 'succ(zero)
+
+proc n2 (d : pos) =
+  cut n1 : pos
+  call n1 n1
+  write d 'succ(n1)
+
+proc n3 (d : pos) =
+  cut n2 : pos
+  call n2 n2
+  write d 'succ(n2)
+
+proc n4 (d : pos) =
+  cut n3 : pos
+  call n3 n3
+  write d 'succ(n3)
+
+proc n5 (d : pos) =
+  cut n4 : pos
+  call n4 n4
+  write d 'succ(n4)
+
+// 4 + 2x + 3x^3
+proc p (d : poly) =
+  cut p0 : pos_poly
+    cut k : pos
+    call n3 k
+    write p0 'mono(k)
+  cut p1 : pos_poly
+    cut k : nat
+    call zero k
+    cut p : nat * pos_poly
+    write p (k, p0)
+    write p1 'term(p)
+  cut p2 : pos_poly
+    cut k : nat
+    call n2 k
+    cut p : nat * pos_poly
+    write p (k, p1)
+    write p2 'term(p)
+  cut p3 : pos_poly
+    cut k : nat
+    call n4 k
+    cut p : nat * pos_poly
+    write p (k, p2)
+    write p3 'term(p)
+  write d 'pos(p3)
+
+// 5x + 2x^2
+proc q (d : poly) =
+  cut p0 : pos_poly
+    cut k : pos
+    call n2 k
+    write p0 'mono(k)
+  cut p1 : pos_poly
+    cut k : nat
+    call n5 k
+    cut p : nat * pos_poly
+    write p (k, p0)
+    write p1 'term(p)
+  cut p2 : pos_poly
+    cut k : nat
+    call zero k
+    cut p : nat * pos_poly
+    write p (k, p1)
+    write p2 'term(p)
+  write d 'pos(p2)
+
+proc add_p_zero (d : poly) =
+  cut p : poly
+  call p p
+  cut q : poly
+  call zero q
+  call add_poly_poly d p q
+
+proc add_zero_q (d : poly) =
+  cut p : poly
+  call zero p
+  cut q : poly
+  call q q
+  call add_poly_poly d p q
+
+proc add_p_q (d : poly) =
+  cut p : poly
+  call p p
+  cut q : poly
+  call q q
+  call add_poly_poly d p q
+
+proc add_p_p (d : poly) =
+  cut p : poly
+  call p p
+  cut q : poly
+  call p q
+  call add_poly_poly d p q

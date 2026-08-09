@@ -1,0 +1,144 @@
+
+type nat = +{'zero : 1, 'succ : nat}
+
+type nat_display = +{'0 : nat_display, '1 : nat_display, '2 : nat_display, '3 : nat_display, '4 : nat_display, '5 : nat_display, '6 : nat_display, '7 : nat_display, '8 : nat_display, '9 : nat_display, 'end : 1}
+
+proc increment_nat_display (d : nat_display) (input : nat_display) = 
+    read input {
+        | '0(input) => write d '1(input)
+        | '1(input) => write d '2(input)
+        | '2(input) => write d '3(input)
+        | '3(input) => write d '4(input)
+        | '4(input) => write d '5(input)
+        | '5(input) => write d '6(input)
+        | '6(input) => write d '7(input)
+        | '7(input) => write d '8(input)
+        | '8(input) => write d '9(input)
+        | '9(input) => cut d2 : nat_display
+                        call increment_nat_display d2 input
+                        write d '0(d2)
+        | 'end(u) => cut d2 : nat_display
+                        write d2 'end(u)
+                    write d '1(d2)
+    }
+
+proc display_nat (d : nat_display) (n : nat) = 
+    read n {
+        | 'zero(n) => write d 'end(n)
+        | 'succ(n) => 
+            cut d2 : nat_display
+                call display_nat d2 n
+            call increment_nat_display d d2
+    }
+
+proc zero (d : nat) =
+    cut u : 1
+        write u ()
+    write d 'zero(u)
+
+proc one (d : nat) = 
+    cut u : 1
+        write u ()
+    cut d0 : nat
+        write d0 'zero(u)
+    write d 'succ(d0)
+
+proc two (d : nat) =
+    cut u : 1
+        write u ()
+    cut d0 : nat
+        write d0 'zero(u)
+    cut d1 : nat
+        write d1 'succ(d0)
+    write d 'succ(d1)
+
+proc five (d : nat) =
+    cut u : 1
+        write u ()
+    cut d0 : nat
+        write d0 'zero(u)
+    cut d1 : nat
+        write d1 'succ(d0)
+    cut d2 : nat
+        write d2 'succ(d1)
+    cut d3 : nat
+        write d3 'succ(d2)
+    cut d4 : nat
+        write d4 'succ(d3)
+    write d 'succ(d4)
+
+proc twelve (d : nat) = 
+    cut u : 1
+        write u ()
+    cut d0 : nat
+        write d0 'zero(u)
+    cut d1 : nat
+        write d1 'succ(d0)
+    cut d2 : nat
+        write d2 'succ(d1)
+    cut d3 : nat
+        write d3 'succ(d2)
+    cut d4 : nat
+        write d4 'succ(d3)
+    cut d5 : nat
+        write d5 'succ(d4)
+    cut d6 : nat
+        write d6 'succ(d5)
+    cut d7 : nat
+        write d7 'succ(d6)
+    cut d8 : nat
+        write d8 'succ(d7)
+    cut d9 : nat
+        write d9 'succ(d8)
+    cut d10 : nat
+        write d10 'succ(d9)
+    cut d11 : nat
+        write d11 'succ(d10)
+    write d 'succ(d11)
+
+proc zero_display (d : nat_display) =
+    cut n : nat
+        call zero n
+    call display_nat d n
+
+proc one_display (d : nat_display) =
+    cut n : nat
+        call one n
+    call display_nat d n
+
+proc two_display (d : nat_display) =
+    cut n : nat
+        call two n
+    call display_nat d n
+
+proc five_display (d : nat_display) =
+    cut n : nat
+        call five n
+    call display_nat d n
+
+proc twelve_display (d : nat_display) =
+    cut n : nat
+        call twelve n
+    call display_nat d n
+    
+
+
+
+
+
+// branches
+fail proc increment_nat_display (d : nat_display) (input : nat_display) = 
+    read input {
+        | '0(input) => write d '1(input)
+        | '1(input) => write d '2(input)
+        | '2(input) => write d '3(input)
+        | '3(input) => write d '4(input)
+        | '4(input) => write d '5(input)
+        | '5(input) => write d '6(input)
+        | '6(input) => write d '7(input)
+        | '7(input) => write d '8(input)
+        | '8(input) => write d '9(input)
+        | '9(input) => cut d2 : nat_display
+                        call increment_nat_display d2 input
+                        write d '0(d2)
+    }

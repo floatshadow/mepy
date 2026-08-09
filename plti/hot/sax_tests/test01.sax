@@ -1,0 +1,188 @@
+type nat = +{'zero : 1, 'succ : nat}
+type pos = +{'succ : nat}
+
+type list = +{'nil : 1, 'cons : nat * list}
+fail type list = +{'nil : 1}
+
+/*
+proc succ (d : nat) (x : nat) =
+  write d 'succ(x)
+*/
+
+fail
+proc zero (d : nat) =
+  cut u : 1 // single-line comment // another
+    write u () // one more
+  write d 'nil(u) //hmm
+
+proc zero (d : nat) =
+  cut u : 1
+    write u ()
+  write d 'zero(u) //hmm
+
+proc succ (d : pos) (x : nat) =
+  write d 'succ(x)
+
+proc three (d : nat) =
+  cut x0 : nat
+    call zero x0
+  cut x1 : nat
+    call succ x1 x0
+  cut x2 : nat
+    call succ x2 x1
+  cut x3 : nat
+    write x3 'succ(x2)
+  id d x3
+
+proc plus2 (d : pos) (x : nat) =
+  cut x1 : nat
+    call succ x1 x
+  call succ d x1
+
+/* multiline comment */
+/*
+ * with many lines
+ */
+
+fail
+proc pred (d : nat) (x : nat) =
+  read x {
+  | 'zero(u) => call zero d
+  | 'succ(x1) => id d x1
+  }
+
+proc pred (d : nat) (x : nat) =
+  read x {
+  | 'zero(u) => read u ()
+                call zero d
+  | 'succ(x1) => id d x1
+  }
+
+proc symdiff1 (d : nat) (x : nat) (y : nat) =
+  read x {
+  | 'zero(u) => read u ()
+                id d y
+  | 'succ(x1) => read y {
+                 | 'zero(u) => read u ()
+                               write d 'succ(x1)
+                 | 'succ(y1) => call symdiff1 d x1 y1
+                 }
+  }
+
+fail
+proc reuse (d : nat) (x : nat) =
+  read x {
+  | 'zero(u) => read u ()
+                read x {
+                | 'zero(u) => read u ()
+                              call zero d
+                | 'succ(x1) => id d x1
+                }
+  | 'succ(x1) => call symdiff1 d x1 x
+  }
+
+fail
+proc double (d : nat) (x : nat) =
+  call symdiff1 d x x
+
+
+/* this will be parsed /* nested */ incorrectly without considering indentation */
+/*
+fail
+proc symdiff2 (d : nat) (x : nat) (y : nat) =
+  read x
+  | 'succ(x1) => read y
+                 | 'zero(u) => read u ()
+                               call succ d x1
+                 | 'succ(y1) => call symdiff2 d x1 y1
+  | 'zero(u) => read u ()
+                id d y
+*/
+
+proc symdiff3 (d : nat) (x : nat) (y : nat) =
+  read x {
+  | 'succ(x1) => read y {
+                | 'zero(u) => read u ()
+                              call succ d x1
+                | 'succ(y1) => call symdiff3 d x1 y1
+                }
+  | 'zero(u) => read u ()
+                id d y
+  }
+
+proc append (d : list) (xs : list) (ys : list) =
+  read xs {
+  | 'nil(u) => read u ()
+               id d ys
+  | 'cons(p) => read p (x, xs1)
+                cut d1 : list
+                  call append d1 xs1 ys
+                cut p1 : nat * list
+                  write p1 (x, d1)
+                write d 'cons(p1)
+  }
+
+proc rev_append (d : list) (xs : list) (acc : list) =
+  read xs {
+  | 'nil(u) => read u ()
+               id d acc
+  | 'cons(p) => read p (x, xs1)
+                cut p1 : nat * list
+                   write p1 (x, acc)
+                cut acc1 : list
+                   write acc1 'cons(p1)
+                call rev_append d xs1 acc1
+  }
+
+proc reverse (d : list) (xs : list) =
+  cut u : 1
+    write u ()
+  cut nil : list
+    write nil 'nil(u)
+  call rev_append d xs nil
+
+proc copy_1 (vw : 1 * 1) (u : 1) =
+  read u ()
+  cut v : 1
+    write v ()
+  cut w : 1
+    write w ()
+  write vw (v, w)
+
+proc copy_nat (yz : nat * nat) (x : nat) =
+  read x {
+  | 'zero(u) => cut vw : 1 * 1
+                    call copy_1 vw u
+                read vw (v, w)
+                cut y : nat
+                    write y 'zero(v)
+                cut z : nat
+                    write z 'zero(w)
+                write yz (y, z)
+  | 'succ(x1) => cut y1z1 : nat * nat
+                     call copy_nat y1z1 x1
+                 read y1z1 (y1, z1)
+                 cut y : nat
+                     write y 'succ(y1)
+                 cut z : nat
+                     write z 'succ(z1)
+                 write yz (y, z)
+  }
+
+proc upto (d : list) (x : nat) =
+  read x {
+  | 'zero(u) => write d 'nil(u)
+  | 'succ(x1) => cut y1z1 : nat * nat
+                     call copy_nat y1z1 x1
+                 read y1z1 (y1, z1)
+                 cut d1 : list
+                     call upto d1 y1
+                 cut p : nat * list
+                     write p (z1, d1)
+                 write d 'cons(p)
+  }
+
+proc list210 (d : list) =
+  cut x3 : nat
+      call three x3
+  call upto d x3

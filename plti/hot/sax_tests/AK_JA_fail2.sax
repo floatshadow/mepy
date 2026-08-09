@@ -1,0 +1,9 @@
+/* Fail: destination shadowed */
+
+type nat = +{'zero : 1, 'succ : nat}
+
+fail proc zero (d : nat) =
+  cut d : 1
+    write d ()
+  write d 'zero(d)
+

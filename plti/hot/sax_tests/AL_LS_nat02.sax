@@ -1,0 +1,132 @@
+/* Duplicate and multiply natural numbers */
+
+type nat = +{'zero : 1, 'succ : nat}
+
+/* Increment a natural number */
+proc inc (d : nat) (x : nat) =
+  write d 'succ(x)
+
+/* Add two natural numbers */
+proc add (d : nat) (x : nat) (y : nat) =
+  read x {
+    /* Nothing left to add; copy y into d. */
+    | 'zero(u) =>
+	read u ()
+	id d y
+    /* Recursively call on x's predecessor and increment. */
+    | 'succ(x1) =>
+	cut d1 : nat
+	  call add d1 x1 y
+	call inc d d1
+  }
+
+/* Deallocate our natural number :( */
+proc dealloc_nat (d : 1) (x : nat) =
+  read x {
+  | 'zero(u) => id d u
+  | 'succ(x) => call dealloc_nat d x
+  }
+
+/* Duplicate a natural number */
+proc dup_nat (d : nat * nat) (x : nat) =
+  read x {
+  | 'zero(u) =>
+      cut d1 : nat
+	write d1 'zero(u)
+      cut d2 : nat
+	cut w : 1
+	  write w ()
+	write d2 'zero(w)
+      write d (d1, d2)
+  | 'succ(x) =>
+      cut y : nat * nat
+	call dup_nat y x
+      read y (y1, y2)
+      cut d1 : nat
+	call inc d1 y1
+      cut d2 : nat
+	call inc d2 y2
+      write d (d1, d2)
+  }
+
+/* Multiply two natural numbers */
+proc mul (d : nat) (x : nat) (y : nat) =
+  read x {
+    /* Multiply y by zero. */
+    | 'zero(u) =>
+	cut w : 1
+	  call dealloc_nat w y
+	read w ()
+	write d 'zero(u)
+    /* Recursively call on x's predecessor and add y. */
+    | 'succ(x1) =>
+	cut copy_y : nat * nat
+	  call dup_nat copy_y y
+	read copy_y (y1, y2)
+	cut d1 : nat
+	  call mul d1 x1 y1
+	call add d d1 y2
+  }
+
+/* BEGIN TESTS */
+
+/* Create some natural numbers */
+proc zero (d : nat) =
+  cut z : 1
+    write z ()
+  write d 'zero(z)
+
+proc one (d : nat) =
+  cut z : nat
+    call zero z
+  call inc d z
+
+proc two (d : nat) =
+  cut o : nat
+    call one o
+  call inc d o
+
+proc four (d : nat) =
+  cut t : nat
+    call two t
+  cut three : nat
+    call inc three t
+  call inc d three
+
+/* Create two copies of numbers */
+proc double_zero (d : nat * nat) =
+  cut z : nat
+    call zero z
+  call dup_nat d z
+
+proc double_one (d : nat * nat) =
+  cut o : nat
+    call one o
+  call dup_nat d o
+
+proc double_two (d : nat * nat) =
+  cut t : nat
+    call two t
+  call dup_nat d t
+
+/* Multiply numbers */
+proc two_times_one (d : nat) =
+  cut t : nat
+    call two t
+  cut o : nat
+    call one o
+  call mul d t o
+
+proc zero_times_four (d : nat) =
+  cut z : nat
+    call zero z
+  cut f : nat
+    call four f
+  call mul d z f
+
+proc two_times_four (d : nat) =
+  cut t : nat
+    call two t
+  cut f : nat
+    call four f
+  call mul d t f

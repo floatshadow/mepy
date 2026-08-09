@@ -1,0 +1,164 @@
+type nat = +{'succ: nat, 'zero: 1}
+type bool = +{'true : 1, 'false: 1}
+type int = nat * nat
+
+proc zero (x:nat) = cut u :1
+                      write u ()
+                    write x 'zero(u)
+
+proc zero_int (x:int) = cut fz : nat
+                            call zero fz
+                        cut sz : nat
+                            call zero sz
+                        write x (fz,sz)
+
+proc true (x:bool) = cut u :1
+                      write u ()
+                    write x 'true(u)
+
+proc false (x:bool) = cut u :1
+                      write u ()
+                    write x 'false(u)
+
+proc succ_nat (r:nat) (x:nat) = write r 'succ(x)
+
+proc succ_int (r : int) (x : int) = read x {
+  | (f,s) => cut succ_f : nat
+                call succ_nat succ_f f
+              write r (succ_f,s)
+}
+
+proc pred_int (r : int) (x : int) = read x {
+  | (f,s) => cut succ_s : nat
+                call succ_nat succ_s s
+              write r (f,succ_s)
+}
+
+proc dealloc_nat (r:1) (x:nat) = read x {
+        | 'zero(u) => id r u
+        | 'succ(x) => call dealloc_nat r x
+}
+
+fail proc check_nat_zero_fail (res:bool) (f:nat) = 
+  read f {
+    | 'zero(u) => 
+        read u ()
+        call true res
+    | 'succ(f) => call false res
+}
+
+
+proc check_nat_equal (res:bool) (f:nat) (s:nat) = 
+  read f {
+  | 'zero(u) => read u ()
+                read s {
+                  | 'zero(u) => read u ()
+                                call true res
+                  | 'succ(s) => cut d : 1
+                                    call dealloc_nat d s
+                                read d ()
+                                call false res
+                }
+  | 'succ(f) => read s {
+    | 'zero(u) => read u ()
+                  cut d:1
+                        call dealloc_nat d f
+                  read d ()
+                  call false res
+    | 'succ(s) => call check_nat_equal res f s
+  }
+  }
+
+proc negate (res:int) (x:int) = 
+    read x {
+        | (f,s) => write res (s,f)
+    }
+
+proc add_ints (res:int) (x:int) (y:int) = 
+    read x {
+        | (xf,xs) => 
+            read xf {
+                | 'succ(xf) => 
+                    cut new_y : int
+                        call succ_int new_y y
+                    cut new_x : int
+                        write new_x (xf,xs)
+                    call add_ints res new_x new_y
+                | 'zero(u) => 
+                    read u ()
+                    read xs {
+                        | 'succ(xs) => 
+                            cut new_y : int
+                                call pred_int new_y y
+                            cut z : nat
+                                call zero z
+                            cut new_x : int
+                                write new_x (z,xs)
+                            call add_ints res new_x new_y
+                        | 'zero(u) => 
+                            read u ()
+                            id res y
+                    }
+            }
+    }
+ 
+proc three_nat (x:nat) = 
+    cut z : nat
+        call zero z
+    cut o : nat
+        call succ_nat o z
+    cut tw : nat
+        call succ_nat tw o
+    call succ_nat x tw
+
+proc three_equal_three_nat (x:bool) = 
+    cut f_three : nat
+        call three_nat f_three
+    cut s_three : nat
+        call three_nat s_three
+    call check_nat_equal x f_three s_three
+
+proc three_equal_zero_nat (x:bool) = 
+    cut f_three : nat
+        call three_nat f_three
+    cut s_zero : nat
+        call zero s_zero
+    call check_nat_equal x f_three s_zero
+
+proc zero_equal_three_nat (x:bool) = 
+    cut f_zero : nat
+        call zero f_zero
+    cut s_three : nat
+        call three_nat s_three
+    call check_nat_equal x f_zero s_three 
+    
+proc three_int (x:int) = 
+    cut z : int
+        call zero_int z
+    cut o : int
+        call succ_int o z
+    cut tw : int
+        call succ_int tw o
+    call succ_int x tw
+    
+proc three_int_sub (x:int) = 
+    cut z : int
+        call zero_int z
+    cut o : int
+        call succ_int o z
+    cut tw : int
+        call succ_int tw o
+    cut th : int
+        call succ_int th tw
+    cut f : int
+        call succ_int f th
+    call pred_int x f
+    
+proc sub_threes (x:int) = 
+    cut three : int
+        call three_int three
+    cut three_s : int
+        call three_int_sub three_s
+    cut neg_three_s : int
+        call negate neg_three_s three_s
+    call add_ints x three neg_three_s

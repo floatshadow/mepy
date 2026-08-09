@@ -1,0 +1,104 @@
+type nat = +{'zero : 1, 'succ : nat}
+
+/* Deallocate our natural number :( */
+proc dealloc_nat (d : 1) (x : nat) =
+  read x {
+  | 'zero(u) => id d u
+  | 'succ(x) => call dealloc_nat d x
+  }
+
+/* 11 - Should fail because we can't have d be a dest and parameter */
+fail proc dealloc_two (d : 1) (x : nat) (d : nat) =
+  cut u : 1
+    call dealloc_nat u x
+  read u ()
+  call dealloc_nat d d
+  
+/* 12 - Should fail because we shadowed d */
+fail proc dealloc_two (d : 1) (x : nat) (y : nat) =
+  cut u : 1
+    call dealloc_nat u x
+  cut d : 1
+    call dealloc_nat d y
+  read u ()
+  write d ()
+
+/* 12 - Should fail because we're trying to shadow u (a dest) */
+fail proc dealloc_two (d : 1) (x : nat) (y : nat) =
+  cut u : 1
+    cut u : 1
+      call dealloc_nat u x
+    call dealloc_nat u y
+  id d u
+
+/* 12 - Should succeed */
+fail proc dealloc_two (d : 1) (x : nat) (y : nat) =
+  cut x : 1
+    cut y : 1
+      call dealloc_nat y y
+    read y ()
+    call dealloc_nat x x
+  id d x
+
+/* 12 - Should succeed */
+proc dealloc_unit (d : 1) (x : 1) = id d x
+fail proc dealloc_two_unit (d : 1) (x : 1) (y : 1) =
+  cut x : 1
+    cut y : 1
+      call dealloc_unit y y
+    read y ()
+    call dealloc_unit x x
+  id d x
+
+/* Test scope for bound variables. */
+fail proc scope_test (d : 1) =
+  cut x : 1
+    cut y : 1 * 1
+      cut u : 1
+        write u ()
+      cut w : 1
+        write w ()
+      write y (u, w)
+    read y (y1, y2)
+    /* We don't use y1 or y2 when they're in scope */
+    write x ()
+  /* y1 and y2 are out of scope. */
+  read y1 ()
+  read y2 ()
+  id d x
+
+proc scope_test (d : 1) =
+  cut x : 1
+    cut y : 1 * 1
+      cut u : 1
+        write u ()
+      cut w : 1
+        write w ()
+      write y (u, w)
+    read y (y1, y2)
+    /* We read y1 and y2 while they're in scope */
+    read y1 ()
+    read y2 ()
+    write x ()
+  id d x
+
+fail proc scope_test (d : 1) =
+  cut x : 1
+    cut y : 1 * 1
+      cut u : 1
+        write u ()
+      cut w : 1
+        write w ()
+      write y (u, w)
+    read y (y1, y2)
+    /* We read y1 and y2 while they're in scope */
+    read y1 ()
+    read y2 ()
+    write x ()
+  /* This fails because y1 and y2 are out of scope */
+  read y1 ()
+  read y2 ()
+  id d x
+
+
+

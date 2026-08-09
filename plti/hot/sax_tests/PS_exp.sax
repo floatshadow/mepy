@@ -1,0 +1,73 @@
+type unat = +{'zero : 1, 'succ : unat}
+
+proc drop (u : 1) (n : unat) =
+  read n {
+  | 'zero(v) => id u v
+  | 'succ(n) => call drop u n
+  }
+
+proc copy (p : unat * unat) (n : unat) =
+  read n {
+  | 'zero(u) => cut n_ : unat
+                  write n_ 'zero(u)
+                cut m : unat
+                  cut u_ : 1
+                    write u_ ()
+                  write m 'zero(u_)
+                write p (n_, m)
+  | 'succ(n) => cut q : unat * unat
+                  call copy q n
+                read q (l, k)
+                cut n_ : unat
+                  write n_ 'succ(l)
+                cut m : unat
+                  write m 'succ(k)
+                write p (n_, m)
+  }
+
+proc add (k : unat) (n : unat) (m : unat) =
+  read m {
+  | 'zero(u) => read u ()
+                id k n
+  | 'succ(m) => cut l : unat
+                  call add l n m
+                write k 'succ(l)
+  }
+
+proc mult (k : unat) (n : unat) (m : unat) =
+  read m {
+  | 'zero(u) => read u ()
+                cut u_ : 1
+                  call drop u_ n
+                write k 'zero(u_)
+  | 'succ(m) => cut p : unat * unat
+                  call copy p n
+                read p (n, n1)
+                cut l : unat
+                  call mult l n1 m
+                call add k l n
+  }
+
+proc exp (k : unat) (n : unat) (m : unat) =
+  read m {
+  | 'zero(u) => read u ()
+                cut u_ : 1
+                  call drop u_ n
+                cut n_ : unat
+                  write n_ 'zero(u_)
+                write k 'succ(n_)
+  | 'succ(m) => cut p : unat * unat
+                  call copy p n
+                read p (n, n1)
+                cut l : unat
+                  call exp l n1 m
+                call mult k l n
+  }
+
+proc zero (n : unat) = cut u : 1 write u () write n 'zero(u)
+proc one (n : unat) = cut m : unat call zero m write n 'succ(m)
+proc two (n : unat) = cut m : unat call one m write n 'succ(m)
+proc three (n : unat) = cut m : unat call two m write n 'succ(m)
+proc four (n : unat) = cut m : unat call three m write n 'succ(m)
+
+proc eighty_one (k : unat) = cut m : unat call three m cut n : unat call four n call exp k m n

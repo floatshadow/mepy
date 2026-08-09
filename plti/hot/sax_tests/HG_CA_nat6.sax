@@ -1,0 +1,85 @@
+type nat = +{'zero : 1, 'succ : nat}
+
+proc zero (d : nat) =
+    cut u : 1
+        write u ()
+    write d 'zero (u)
+
+proc succ (d : nat) (x : nat) =
+    read x {
+    | 'zero (x0) =>
+        cut y : nat
+            write y 'zero (x0)
+            write d 'succ (y)
+    | 'succ (x1) =>
+        cut y : nat
+            write y 'succ (x1)
+            write d 'succ (y)
+    }
+
+proc add (d : nat) (x1 : nat) (x2 : nat) =
+    read x1 {
+    | 'zero (x0) =>
+        read x0 ()
+        id d x2
+    | 'succ (x1) =>
+        cut temp : nat
+            call add temp x1 x2
+            write d 'succ (temp)
+    }
+
+proc one (d : nat) =
+    cut n : nat
+        call zero n
+    call succ d n
+
+proc two (d : nat) =
+    cut n : nat
+        call one n
+    call succ d n
+
+type list = +{'nil : 1, 'cons : nat * list}
+
+proc empty (d : list) =
+    cut u : 1
+        write u ()
+    write d 'nil (u)
+
+proc cons (d : list) (l : list) (n : nat) =
+    cut p : nat * list
+        write p (n, l)
+    write d 'cons (p)
+
+proc sum (d : nat) (l : list) =
+    read l {
+    | 'nil (l0) =>
+        read l0 ()
+        call zero d
+    | 'cons (p) =>
+        read p (n, l)
+        cut r : nat
+            call sum r l
+        call add d n r
+    }
+
+proc twolist (d : list) =
+    cut l1 : list
+        call empty l1
+    cut n2 : nat
+        call two n2
+    cut l2 : list
+        call cons l2 l1 n2
+    cut n3 : nat
+        call two n3
+    cut l3 : list
+        call cons l3 l2 n3
+    cut n4 : nat
+        call two n4
+    cut l4 : list
+        call cons l4 l3 n4
+    id d l4
+
+proc list_sum (d : nat) =
+    cut l : list
+        call twolist l
+    call sum d l

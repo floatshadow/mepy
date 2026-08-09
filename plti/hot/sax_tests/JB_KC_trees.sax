@@ -1,0 +1,253 @@
+type nat = +{'succ : nat, 'zero: 1}
+type comp = +{'less:1, 'eq:1, 'greater:1}
+type node = nat * (tree * tree)
+type tree = +{'nil: 1, 'node: node}
+type some_nat = +{'none:1, 'some:nat}
+
+proc zero (x:nat) = cut u :1
+                      write u ()
+                    write x 'zero(u)
+proc one (n:nat) =
+    cut z : nat
+        call zero z
+    write n 'succ(z)
+proc less (x:comp) = cut u : 1
+                        write u ()
+                     write x 'less(u)
+proc eq (x:comp) = cut u : 1
+                        write u ()
+                     write x 'eq(u)
+proc greater (x:comp) = cut u : 1
+                        write u ()
+                     write x 'greater(u)
+
+proc succ_nat (r:nat) (x:nat) = write r 'succ(x)
+
+proc add_nat (r:nat) (x:nat) (y:nat) = 
+    read x {
+        |'zero(u) => 
+            read u ()
+            id r y
+        | 'succ(x) =>
+            cut new_x : nat
+                call add_nat new_x x y
+            write r 'succ(new_x)
+    }
+
+proc copy_nat (r:nat * nat) (x:nat) = 
+    read x {
+        | 'zero(u) =>
+            read u ()
+            cut z : nat
+                call zero z
+            cut z_ : nat
+                call zero z_
+            write r (z,z_)
+        | 'succ(s) =>
+            cut dup_s : nat * nat
+                call copy_nat dup_s s
+            read dup_s (s,s_)
+            cut x__ : nat
+                write x__ 'succ(s)
+            cut x_ : nat
+                write x_ 'succ(s_)
+            write r (x__,x_)
+    }            
+
+proc dealloc_nat (r:1) (x:nat) = read x {
+        | 'zero(u) => id r u
+        | 'succ(x) => call dealloc_nat r x
+}
+
+proc comp_nat (r:comp) (x:nat) (y:nat) = 
+    read x {
+      | 'zero(u) => read u ()
+                    read y {
+                        | 'zero(u) => read u ()
+                                      call eq r
+                        |  'succ(s) => cut d : 1
+                                           call dealloc_nat d s
+                                       read d ()
+                                       call less r
+                    }
+      | 'succ(xs) => read y {
+                        | 'zero(u) => read u ()
+                                      cut d : 1
+                                          call dealloc_nat d xs
+                                      read d ()
+                                      call greater r
+                        | 'succ(ys) => call comp_nat r xs ys
+                     }
+    }
+
+proc write_node (t:tree) (l:tree) (x:nat) (r:tree) = 
+    cut tree_pair : tree * tree
+        write tree_pair (l,r)
+    cut node_data : node
+        write node_data (x,tree_pair)
+    write t 'node(node_data)
+
+proc empty_tree (t:tree) = 
+    cut u : 1
+        write u ()
+    write t 'nil(u)
+
+proc insert (r:tree) (t:tree) (x:nat) = 
+    read t {
+    | 'nil(u) => read u ()
+                cut left_empty : tree
+                    call empty_tree left_empty
+                cut right_empty : tree
+                    call empty_tree right_empty
+                call write_node r left_empty x right_empty
+    | 'node(node_data) =>
+                read node_data (n,tree_pair)
+                read tree_pair (left,right)
+                cut copied_x : (nat * nat)
+                    call copy_nat copied_x x
+                read copied_x (x,x_)
+                cut copied_n : (nat * nat)
+                    call copy_nat copied_n n
+                read copied_n (n,n_)
+                cut res:comp
+                    call comp_nat res x n
+                read res {
+                    | 'less(u) => 
+                        read u ()
+                        cut new_left : tree
+                            call insert new_left left x_
+                        call write_node r new_left n_ right
+                    | 'greater(u) => 
+                        read u ()
+                        cut new_right : tree
+                            call insert new_right right x_
+                        call write_node r left n_ new_right
+                    | 'eq(u) =>
+                        read u ()
+                        cut d : 1
+                            call dealloc_nat d x_
+                        read d ()
+                        call write_node r left n_ right
+                }
+}
+
+proc dealloc_tree (r:1) (t:tree) = 
+    read t {
+    | 'nil(u) => id r u
+    | 'node(node_data) =>
+                read node_data (n,tree_pair)
+                read tree_pair (left,right)
+                cut d : 1
+                    call dealloc_nat d n
+                read d ()
+                cut d__ : 1
+                    call dealloc_tree d__ left
+                read d__ ()
+                cut d_ : 1
+                    call dealloc_tree d_ right
+                id r d_
+}
+
+proc mem (r:some_nat) (t:tree) (x:nat) = 
+    read t {
+    | 'nil(u) =>
+        cut d : 1
+            call dealloc_nat d x
+        read d ()
+        write r 'none(u)
+    | 'node(node_data) =>
+                read node_data (n,tree_pair)
+                read tree_pair (left,right)
+                cut copied_x : (nat * nat)
+                    call copy_nat copied_x x
+                read copied_x (x,x_)
+                cut res:comp
+                    call comp_nat res x n
+                read res {
+                    | 'less(u) => 
+                        read u ()
+                        cut d : 1
+                            call dealloc_tree d right
+                        read d ()
+                        call mem r left x_
+                    | 'greater(u) => 
+                        read u ()
+                        cut d : 1
+                            call dealloc_tree d left
+                        read d ()
+                        call mem r right x_
+                    | 'eq(u) =>
+                        read u ()
+                        cut d : 1
+                            call dealloc_tree d left
+                        read d ()
+                        cut d_ : 1
+                            call dealloc_tree d_ right
+                        read d_ ()
+                        write r 'some(x_)
+                }
+}
+
+
+proc two (n:nat) = 
+    cut o : nat
+        call one o
+    cut o_ : nat
+        call one o_
+    call add_nat n o o_
+proc three (n:nat) = 
+    cut t : nat
+        call two t
+    call succ_nat n t
+proc four (n:nat) = 
+    cut t : nat
+        call two t
+    cut t_ : nat
+        call two t_
+    call add_nat n t t_
+
+proc single_node_tree (t:tree) = 
+    cut empty : tree
+        call empty_tree empty
+    cut n : nat
+        call zero n
+    call insert t empty n
+
+proc full_tree (t:tree) = 
+    cut empty : tree
+        call empty_tree empty
+    cut z : nat
+        call zero z
+    cut o : nat
+        call one o
+    cut tw : nat
+        call two tw
+    cut th : nat
+        call three th
+    cut f : nat
+        call four f
+    cut t0 : tree
+        call insert t0 empty tw
+    cut t1 : tree
+        call insert t1 t0 o
+    cut t2 : tree
+        call insert t2 t1 th
+    cut t3 : tree
+        call insert t3 t2 z
+    call insert t t3 f
+
+proc mem_zero (r:some_nat) = 
+    cut t : tree
+        call full_tree t
+    cut z : nat
+        call zero z
+    call mem r t z
+
+proc mem_five (r:some_nat) = 
+    cut t : tree
+        call full_tree t
+    cut fo : nat
+        call four fo
+    cut f : nat
+        call succ_nat f fo
+    call mem r t f

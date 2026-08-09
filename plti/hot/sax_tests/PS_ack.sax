@@ -1,0 +1,49 @@
+type unat = +{'zero : 1, 'succ : unat}
+
+proc copy (p : unat * unat) (n : unat) =
+  read n {
+  | 'zero(u) => cut n_ : unat
+                  write n_ 'zero(u)
+                cut m : unat
+                  cut u_ : 1
+                    write u_ ()
+                  write m 'zero(u_)
+                write p (n_, m)
+  | 'succ(n) => cut q : unat * unat
+                  call copy q n
+                read q (l, k)
+                cut n_ : unat
+                  write n_ 'succ(l)
+                cut m : unat
+                  write m 'succ(k)
+                write p (n_, m)
+  }
+
+proc ack (k : unat) (m : unat) (n : unat) =
+  read m {
+  | 'zero(u) => read u ()
+                write k 'succ(n)
+  | 'succ(m) => read n {
+                | 'zero(u) => cut n_ : unat
+                                cut z : unat
+                                  write z 'zero(u)
+                                write n_ 'succ(z)
+                              call ack k m n_
+                | 'succ(n) => cut p : unat * unat
+                                call copy p m
+                              read p (m, m1)
+                              cut m2 : unat
+                                write m2 'succ(m1)
+                              cut l : unat
+                                call ack l m2 n
+                              call ack k m l
+                }
+  }
+
+proc zero (n : unat) = cut u : 1 write u () write n 'zero(u)
+proc one (n : unat) = cut m : unat call zero m write n 'succ(m)
+proc two (n : unat) = cut m : unat call one m write n 'succ(m)
+proc three (n : unat) = cut m : unat call two m write n 'succ(m)
+proc four (n : unat) = cut m : unat call three m write n 'succ(m)
+
+proc one_twenty_five (k : unat) = cut m : unat call three m cut n : unat call four n call ack k m n

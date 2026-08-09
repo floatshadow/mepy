@@ -1,0 +1,33 @@
+type first = +{'nil : 1, 'other : second}
+type second = +{'other : first}
+
+proc A (d : 1) (x : first) =
+read x {
+| 'nil(u) => id d u
+| 'other(x) => call B d x
+}
+
+proc B (d : 1) (x : second) =
+read x {
+| 'other(x) => call A d x
+}
+
+proc justnil (d : first) =
+cut z : 1
+  write z ()
+write d 'nil(z)
+
+proc onesecond (d : second) =
+cut z : first
+  call justnil z
+write d 'other(z)
+
+proc onefirst (d : first) =
+cut q : second
+  call onesecond q
+write d 'other(q)
+
+proc unravell(d : 1) =
+cut z : first
+  call onefirst z
+call A d z

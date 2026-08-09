@@ -1,0 +1,3 @@
+type nat = +{'zero : 1, 'succ : nat}
+
+fail type list = +{'none : 1, 'none : 1}

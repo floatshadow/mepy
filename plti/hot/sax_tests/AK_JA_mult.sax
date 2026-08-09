@@ -1,0 +1,169 @@
+type bin = +{'b0 : bin, 'b1 : bin, 'e : 1}
+type bool = +{'false : 1, 'true : 1}
+
+proc zero (d : bin) =
+  cut u : 1
+    write u ()
+  write d 'e(u)
+
+proc one (d : bin) =
+  cut x : bin
+    call zero x
+  write d 'b1(x)
+
+proc succ (d : bin) (x : bin) =
+  read x {
+  | 'b0(x0) => write d 'b1(x0)
+  | 'b1(x1) => cut y : bin
+                  call succ y x1
+               write d 'b0(y)
+  | 'e(u) => read u ()
+             call one d
+  }
+
+proc two (d : bin) =
+  cut x : bin
+    call one x
+  call succ d x
+
+proc three (d : bin) =
+  cut x : bin
+    call two x
+  call succ d x
+
+proc four (d : bin) =
+  cut x : bin
+    call three x
+  call succ d x
+
+proc five (d : bin) =
+  cut x : bin
+    call four x
+  call succ d x
+
+proc dec (d : bin) (x : bin) =
+  read x {
+  | 'b0(x0) => cut y : bin
+                call dec y x0
+                write d 'b1(y)
+  | 'b1(x1) => 
+    read x1 {
+      | 'b0(x0) => cut y : bin
+                    write y 'b0(x0)
+                    write d 'b0(y)
+      | 'b1(x1) => cut y : bin
+                    write y 'b1(x1)
+                    write d 'b0(y)
+      | 'e(u) => write d 'e(u)
+    }
+  | 'e(u) => write d 'e(u)
+  }
+
+proc add (d : bin) (x : bin) (y : bin) =
+  read x {
+  | 'b0(x0) => read y {
+    | 'b0(y0) => cut z : bin
+                  call add z x0 y0
+                  write d 'b0(z)
+    | 'b1(y1) => cut z : bin
+                  call add z x0 y1
+                  write d 'b1(z)
+    | 'e(u) => read u ()
+                write d 'b0(x0)
+    }
+  | 'b1(x1) => read y {
+    | 'b0(y0) => cut z : bin
+                  call add z x1 y0
+                  write d 'b1(z)
+    | 'b1(y1) => cut z0 : bin
+                  call add z0 x1 y1
+                  cut z : bin
+                  call succ z z0
+                  write d 'b0(z)
+    | 'e(u) => read u ()
+                write d 'b1(x1)
+    }
+  | 'e(u) => read u ()
+              id d y
+  }
+
+proc dealloc_bin (d : 1) (x : bin) =
+  read x {
+  | 'b0(x0) => call dealloc_bin d x0
+  | 'b1(x1) => call dealloc_bin d x1
+  | 'e(u) => id d u
+  }
+
+proc dup_bin (d : bin * bin) (x : bin) =
+  // write d (x, x)
+  read x {
+  | 'b0(x) => cut y : bin * bin
+                 call dup_bin y x
+              read y (y1, y2)
+              cut d1 : bin
+                write d1 'b0(y1)
+              cut d2 : bin
+                write d2 'b0(y2)
+              write d (d1, d2)
+  | 'b1(x) => cut y : bin * bin
+                 call dup_bin y x
+              read y (y1, y2)
+              cut d1 : bin
+                write d1 'b1(y1)
+              cut d2 : bin
+                write d2 'b1(y2)
+              write d (d1, d2)
+  | 'e(u) => cut d1 : bin
+                write d1 'e(u)
+             cut d2 : bin
+                cut w : 1
+                   write w ()
+                write d2 'e(w)
+             write d (d1, d2)
+  }
+
+fail proc mult (d : bin) (x : bin) (y : bin) =
+  read x {
+  | 'b0(x0) =>  cut x : bin
+                write x 'b0(x0)
+                cut t : bin
+                call dec t x
+                cut ys : bin * bin
+                call dup_bin ys y
+                read ys (y1, y2)
+                cut z : bin
+                call mult z t y1
+                call add d z y2
+  | 'b1(x1) =>  cut x : bin
+                write x 'b1(x1)
+                cut t : bin
+                call dec t x
+                cut ys : bin * bin
+                call dup_bin ys y
+                read ys (y1, y2)
+                cut z : bin
+                call mult z t y1
+                call add d z y2
+  | 'e(u) => cut v : 1
+              call dealloc_bin v y
+              read v ()
+              write d 'e(u)
+  }
+
+fail proc fifteen (d : bin) =
+  cut x : bin
+    call five x
+  cut y : bin
+    call three y
+  call mult d x y
+
+fail proc twentyone (d : bin) =
+  cut x1 : bin
+    call five x1
+  cut x2 : bin
+    call two x2
+  cut x : bin
+    call add x x1 x2
+  cut y : bin
+    call three y
+  call mult d x y

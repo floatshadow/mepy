@@ -1,0 +1,57 @@
+type nat = +{'succ: nat, 'zero:1}
+// Must be contractive
+fail type posint = nat
+type posint = +{'succ: nat, 'zero: 1}
+
+// Must be defined
+fail proc fake_type (x:fake_unit) = write x ()
+
+// Impossible to construct a value of this type, but can define
+type list = nat * list
+    
+proc zero (x:nat) =
+    cut u : 1
+        write u ()
+    write x 'zero(u)
+
+
+// Mutually recursive types that can all be constructed
+type a = nat * b * c
+type b = +{'nil:1, 'node:a*c}
+type c = +{'b:b,'a:a}
+
+proc b_nil (x:b) = 
+    cut u : 1
+        write u ()
+    write x 'nil(u)
+proc c_tag_b (x:c) = 
+    cut b1 : b
+        call b_nil b1
+    write x 'b(b1)
+
+proc a_simple (x:a) = 
+    cut b1 : b
+        call b_nil b1
+    cut c_val : c
+        call c_tag_b c_val
+    cut bc_pair : b * c
+        write bc_pair (b1,c_val)
+    cut z : nat
+        call zero z
+    write x (z,bc_pair)
+
+proc c_tag_a (x:c) =
+    cut a1 : a
+        call a_simple a1
+    write x 'a(a1)
+
+proc b_node (x:b) = 
+    cut a1 : a
+        call a_simple a1
+    cut c1 : c
+        call c_tag_a c1
+    cut ac : a * c
+        write ac (a1,c1)
+    write x 'node(ac)
+    
+    

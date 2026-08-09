@@ -1,0 +1,21 @@
+type nat = +{'zero : 1, 'succ : nat}
+type pos = +{'succ : nat}
+
+proc zero (d : nat) =
+  cut u : 1
+    write u ()
+  write d 'zero(u)
+
+proc one (d : pos) =
+  cut x : nat
+    call zero x
+  write d 'succ(x)
+
+proc succ (d : pos) (x : nat) = write d 'succ(x)
+
+proc test_three (d: pos) =
+    cut x1: nat
+       call one x1
+    cut x2: pos
+       call succ x2 x1
+    call succ d x2

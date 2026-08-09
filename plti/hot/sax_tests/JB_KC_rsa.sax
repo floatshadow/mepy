@@ -1,0 +1,258 @@
+type bool = +{'true : 1, 'false: 1}
+type nat = +{'zero : 1, 'succ : nat}
+
+proc iforgorbool (x:1) (b:bool) = read b {
+				  | 'true(u) => id x u
+				  | 'false(u) => id x u
+}
+
+proc iforgornat (r:1) (x:nat) = read x {
+        | 'zero(u) => id r u
+        | 'succ(x) => call iforgornat r x
+}
+
+proc zero (x:nat) = cut u :1
+                      write u ()
+                    write x 'zero(u)
+
+proc succ (r:nat) (x:nat) = write r 'succ(x)
+
+proc pred (r:nat) (x:nat) = read x {
+  | 'zero(u) => cut n : nat
+                   write n 'zero(u)
+                id r n
+  | 'succ(n) => id r n
+ }
+
+proc one (o:nat) = cut z : nat
+                     call zero z
+                   call succ o z
+
+proc two (tw:nat) = cut o : nat
+                     call one o
+                   call succ tw o
+
+proc three (th:nat) = cut tw : nat
+                       call two tw
+                     call succ th tw
+
+proc four (f:nat) =
+	cut th : nat
+	  call three th
+	call succ f th
+
+proc leq (r: bool) (a: nat) (b: nat) = read a {
+| 'zero(u) => 	cut v : 1
+			call iforgornat v b
+		read u ()
+		write r 'true(v)
+| 'succ(m) =>	read b {
+
+		| 'zero(v) =>	cut u : 1
+					call iforgornat u m
+				read u ()
+				write r 'false(v)
+		| 'succ(n) =>	call leq r m n
+		}
+}
+
+proc dupnat (ns: nat * nat) (n: nat) =
+	read n {
+	| 'zero(u) => cut z : nat
+			call zero z
+		      cut z2 : nat
+			write z2 'zero(u)
+		      write ns (z,z2)
+	| 'succ(m) => cut p1 : nat * nat
+			call dupnat p1 m
+		      read p1 {
+			| (m,n) => cut m1 : nat
+					write m1 'succ(m)
+				   cut n1: nat
+					write n1 'succ(n)
+				   write ns (m1,n1)
+		      }
+}
+
+proc add (s : nat) (m : nat) (n : nat) = 
+	read m {
+	| 'zero(u) =>	read u ()
+			id s n
+	| 'succ(m) =>	cut sn : nat
+			  write sn 'succ(n)
+			call add s m sn
+	}
+
+proc subtract (sd : nat * bool) (m : nat) (n : nat) = 
+	read n {
+	| 'zero(v) =>	cut t : bool
+			  write t 'true(v)
+			write sd (m,t)
+	| 'succ(n1) =>	read m {
+			| 'zero(v) =>	cut f : bool
+					  write f 'false(v)
+					cut n_ : nat
+					  write n_ 'succ(n1)
+					write sd (n_,f)
+			| 'succ(m1) =>	call subtract sd m1 n1
+			}
+	}
+
+proc threeminusthree (z : nat * bool) =
+	cut th1 : nat
+	  call three th1
+	cut th2 : nat
+	  call three th2
+	call subtract z th1 th2
+
+proc oneminusthree (n2 : nat * bool) =
+	cut th : nat
+	  call three th
+	cut o : nat
+	  call one o
+	call subtract n2 o th
+
+proc twominusone (o : nat * bool) =
+	cut tw : nat
+	  call two tw
+	cut o7 : nat
+	  call one o7
+	call subtract o tw o7
+
+
+proc mul (p : nat) (m : nat) (n : nat) =
+	read m {
+        | 'zero(u) =>   cut v : 1
+                          call iforgornat v n
+                        read v ()
+                        write p 'zero(u)
+        | 'succ(m) =>	cut ns : nat * nat
+			  call dupnat ns n
+			read ns (n1,n2)   
+			cut mn : nat
+                          call mul mn m n1
+			call add p mn n2	
+}
+
+proc pow (r : nat) (b : nat) (e : nat) =
+	read e {
+	| 'zero(u) => 	cut v : 1
+			  call iforgornat v b
+			read v ()
+			read u ()
+			call one r
+	| 'succ(e) =>	cut bs : nat * nat
+			  call dupnat bs b
+			read bs (b1,b2)
+			cut be : nat
+			  call pow be b1 e
+			call mul r b2 be
+	}
+
+proc twototwo (f : nat) = 
+	cut tw1 : nat
+	  call two tw1
+	cut tw2 : nat
+	  call two tw2
+	call pow f tw1 tw2
+
+fail proc postwototwo (f : nat) = 
+	cut tw1 : nat
+	  call two tw1
+	cut f1 : nat
+	  call twototwo f1
+	cut tw2 : nat
+	  call subtract tw2 f1 tw1
+	call pow f tw2 tw1
+
+// n % m
+proc mod (r : nat) (n : nat) (m : nat) =
+	cut ns : nat * nat
+	  call dupnat ns n
+	read ns (n1,n2)
+	cut ms : nat * nat
+	  call dupnat ms m
+	read ms (m1,m2)
+	cut mleqn : bool
+	  call leq mleqn m1 n1
+	read mleqn {
+	| 'false(u) =>	read u ()
+			cut v : 1
+			  call iforgornat v m2
+			read v ()
+			id r n2
+	| 'true(u) =>	cut morems : nat * nat
+			  call dupnat morems m2
+			read morems (m3,m4)
+			cut newnsign: nat * bool
+			  call subtract newnsign n2 m3
+			read newnsign (newn,s)
+			read u ()
+			cut v : 1
+			  call iforgorbool v s
+			read v ()
+			call mod r newn m4
+	}
+
+fail proc twomodfour (t : nat) =
+	cut t : nat
+	  call two t
+	cut f : nat
+	  call four f
+	call mod t t f
+
+proc twomodfour (t : nat) =
+        cut t2 : nat
+          call two t2
+        cut f : nat
+          call four f
+        call mod t t2 f
+
+proc fourmodtwo (z : nat) =
+	cut t : nat
+	  call two t
+	cut f : nat
+	  call four f
+	call mod z f t
+
+proc modpow (r : nat) (b : nat) (e : nat) (m : nat) =
+	read e {
+        | 'zero(u) =>   cut v : 1
+                          call iforgornat v b
+			cut w : 1
+			  call iforgornat w m
+			read w ()
+                        read v ()
+                        read u ()
+                        call one r
+        | 'succ(e) =>   cut bs : nat * nat
+                          call dupnat bs b
+                        read bs (b1,b2)
+			cut ms : nat * nat
+			  call dupnat ms m
+			read ms (m1,m2)
+                        cut be : nat
+                          call modpow be b1 e m1
+			cut premod : nat
+                          call mul premod b2 be
+			call mod r premod m2
+        }
+
+proc twotofourmodthree (o : nat) =
+	cut tw : nat
+	  call two tw
+	cut f : nat
+	  call four f
+	cut th : nat
+	  call three th
+	call modpow o tw f th
+
+proc fourtofourmodthree (o : nat) = 
+	cut f1 : nat
+	  call four f1
+	cut f2 : nat
+	  call four f2
+	cut th : nat
+	  call three th
+	call modpow o f1 f2 th
+

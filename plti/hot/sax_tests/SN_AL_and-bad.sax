@@ -1,0 +1,7 @@
+type bool = +{'false : 1, 'true : 1}
+
+fail proc and (d : bool) (x : bool) (y : bool) =
+  read x {
+  | 'false(u) => id d x
+  | 'true(u) => id d y
+  }

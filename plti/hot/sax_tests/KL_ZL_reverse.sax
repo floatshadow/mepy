@@ -1,0 +1,111 @@
+type nat = +{'zero : 1, 'succ : nat}
+type bool = +{'true : 1, 'false : 1}
+type list = +{'nil : 1, 'cons : nat * list}
+type pair = nat * nat
+
+proc zero (d : nat) =
+  cut u : 1
+     write u ()
+  write d 'zero(u)
+
+proc succ (d : nat) (x : nat) =
+  write d 'succ(x)
+
+proc cons (d : list) (x : nat) (xs : list) =
+  cut p : nat * list
+     write p (x, xs)
+  write d 'cons(p)
+
+proc nil (d : list) =
+  cut u : 1
+     write u ()
+  write d 'nil(u)
+
+proc dup_nat (d : pair) (x : nat) =
+  read x {
+  | 'zero(u) => read u ()
+                cut n1 : nat
+                cut u1 : 1
+                   write u1 ()
+                   write n1 'zero(u1)
+                cut n2 : nat
+                cut u2 : 1
+                   write u2 ()
+                   write n2 'zero(u2)
+                   write d (n1, n2)
+  | 'succ(x1) => cut p : pair
+                    call dup_nat p x1
+                    read p (y1, y2)
+                 cut n1 : nat
+                    write n1 'succ(y1)
+                 cut n2 : nat
+                    write n2 'succ(y2)
+                    write d (n1, n2)
+  }
+
+proc drop_nat (d : 1) (x : nat) =
+  read x {
+  | 'zero(u) => read u ()
+                write d ()
+  | 'succ(x1) => call drop_nat d x1
+}
+
+proc leq (d : bool) (x : nat) (y : nat) =
+  read x {
+  | 'zero(u) => read u ()
+                cut w : 1
+                   call drop_nat w y
+                write d 'true(w)
+  | 'succ(x1) => read y {
+                 | 'zero(u) => read u ()
+                               cut w : 1
+                                  call drop_nat w x1
+                               write d 'false(w)
+                 | 'succ(y1) => call leq d x1 y1
+                 }
+  }
+
+proc reverse (d : list) (l : list) = 
+  cut empty : list
+    cut w : 1
+       write w ()
+    write empty 'nil(w)
+  call reverse_acc d empty l
+
+proc reverse_acc (d : list) (acc : list) (l : list) =
+  read l {
+  | 'nil(u) => read u ()
+               id d acc
+  | 'cons(p) => read p (n, rest)
+                cut new_acc : list
+                  call cons new_acc n acc
+                call reverse_acc d new_acc rest
+  }
+
+proc make_021 (d : list) =
+  cut z : nat
+     call zero z
+  cut p1 : pair
+     call dup_nat p1 z
+     read p1 (z1, z2)
+  cut one : nat
+     call succ one z1
+  cut p2 : pair
+     call dup_nat p2 one
+     read p2 (one1, one2)
+  cut two : nat
+     call succ two one1
+  cut l : list
+     call nil l
+  cut l1 : list
+     call cons l1 z2 l
+  cut l2 : list
+     call cons l2 two l1
+     call cons d one2 l2
+
+/* Run the test */
+proc test_reverse (d : list) =
+  cut xs : list
+    call make_021 xs
+  call reverse d xs
+

@@ -1,0 +1,78 @@
+type tree = +{'null : 1, 'node : tree * tree}
+type nat = +{'zero : 1, 'succ : nat}
+
+proc copy (dest : nat) (src : nat) =
+     read src {
+     | 'zero(u) => write dest 'zero(u)
+     | 'succ(n) => write dest 'succ(n)
+     }
+
+/* counts the number of nodes in the tree with dfs */
+proc dfs (d : nat) (c : nat) (t : tree) =
+     read t {
+     | 'null(u)  => read u ()
+                        call copy d c
+     | 'node(n)  => read n (t1, t2)
+                    cut d1 : nat
+                        call dfs d1 c t1
+                    cut d2 : nat
+                        call dfs d2 d1 t2
+                    write d 'succ(d2)
+
+     }
+
+
+/* Constructors for a tree */
+proc leaf (d : tree) =
+     cut u : 1
+         write u ()
+     write d 'null(u)
+
+proc node (d : tree) (l : tree) (r : tree) =
+     cut t : tree * tree
+         write t (l, r)
+     write d 'node(t)
+
+
+/* Tree looks like this:
+ *      4
+ *     / \
+ *    1   3
+ *         \
+ *          2
+ * size=4
+ */
+proc size (d : nat) =
+     cut u : 1
+         write u ()
+     cut z : nat
+         write z 'zero(u)
+     cut n1_left : tree
+         call leaf n1_left
+     cut n1_right : tree
+         call leaf n1_right
+     cut n1 : tree
+         call node n1 n1_left n1_right
+     cut n2_left : tree
+         call leaf n2_left
+     cut n2_right : tree
+         call leaf n2_right
+     cut n2 : tree
+         call node n2 n2_left n2_right
+     cut n3_left : tree
+         call leaf n3_left
+     cut n3 : tree
+         call node n3 n3_left n2
+     cut n4 : tree
+         call node n4 n1 n3
+     call dfs d z n4
+
+/* Unrelated, checking equirecursive types */
+type giraffe = +{'cilantro : 1, 'friend : giraffe}
+type goose = +{'cilantro : 1, 'friend : goose}
+
+proc duckduck (g : goose) (j : giraffe) =
+     read j {
+     | 'cilantro(u) => write g 'cilantro(u)
+     | 'friend(j1)  => write g 'friend(j1)
+     }

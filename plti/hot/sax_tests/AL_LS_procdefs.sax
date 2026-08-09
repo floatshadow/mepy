@@ -1,0 +1,14 @@
+/* Test static semantics for procedures */
+
+/* 9. Procedures that are called must be defined */
+fail proc quadruple (d : 1 * (1 * (1 * 1))) =
+  cut u : 1
+    write u ()
+  cut v : 1 * 1 * 1
+    call triple v // triple does not exist
+  write d (u, v)
+
+/* This proc will loop forever, but it's technically ok */
+proc loop (d : 1) (x : 1) =
+  call loop d x
+

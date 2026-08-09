@@ -1,0 +1,198 @@
+type bool = +{'true : 1, 'false : 1}
+type nat = +{'zero : 1, 'succ : nat}
+
+/* Make some numbers */
+
+proc inc (d : nat) (x : nat) =
+  write d 'succ(x)
+
+proc zero (d : nat) =
+  cut z : 1
+    write z ()
+  write d 'zero(z)
+
+proc one (d : nat) =
+  cut x : nat
+    call zero x
+  call inc d x
+
+proc two (d : nat) =
+  cut x : nat
+    call one x
+  call inc d x
+
+proc three (d : nat) =
+  cut x : nat
+    call two x
+  call inc d x
+
+proc four (d : nat) =
+  cut x : nat
+    call three x
+  call inc d x
+
+proc five (d : nat) =
+  cut x : nat
+    call four x
+  call inc d x
+
+proc six (d : nat) =
+  cut x : nat
+    call five x
+  call inc d x
+
+proc seven (d : nat) =
+  cut x : nat
+    call six x
+  call inc d x
+
+proc eight (d : nat) =
+  cut x : nat
+    call seven x
+  call inc d x
+
+/* Helpers for naturals */
+
+proc deallocNat (d : 1) (x : nat) =
+  read x {
+  | 'zero(u) => id d u
+  | 'succ(x) => call deallocNat d x
+  }
+
+proc dupNat (d : nat * nat) (x : nat) =
+  read x {
+  | 'zero(u) =>
+      cut d1 : nat
+	      write d1 'zero(u)
+      cut d2 : nat
+	      cut w : 1
+	        write w ()
+	      write d2 'zero(w)
+      write d (d1, d2)
+  | 'succ(x) =>
+      cut y : nat * nat
+        call dupNat y x
+      read y (y1, y2)
+      cut d1 : nat
+        call inc d1 y1
+      cut d2 : nat
+        call inc d2 y2
+      write d (d1, d2)
+  }
+
+/* Returns true if x > y, false otherwise */
+proc isGreater (d : bool) (x : nat) (y : nat) =
+  read x {
+  | 'zero(u) => 
+      cut w : 1
+        call deallocNat w y
+      read w ()
+      write d 'false(u)
+  | 'succ(x2) => 
+      read y {
+      | 'zero(u) => 
+          cut w : 1
+            call deallocNat w x2
+          read w ()
+          write d 'true(u)
+      | 'succ(y2) => call isGreater d x2 y2
+      }
+  }
+
+/* Computes x - y if x > y else 0 */
+proc sub (d : nat) (x : nat) (y : nat) =
+  read y {
+  | 'zero(u) => 
+      read u ()
+      id d x
+  | 'succ(y2) => 
+      read x {
+      | 'zero(u) => 
+          cut w : 1
+            call deallocNat w y2
+          read w ()
+          write d 'zero(u)
+      | 'succ(x2) => call sub d x2 y2
+      }
+  }
+
+/* Computes x % y */
+proc mod (d : nat) (x : nat) (y : nat) =
+  cut t : nat * nat
+    call dupNat t x
+  read t (x0, x1)
+  cut t_ : nat * nat
+    call dupNat t_ y
+  read t_ (y0, y1)
+  cut t__ : nat * nat
+    call dupNat t__ y1
+  read t__ (y1, y2)
+  cut b : bool
+    call isGreater b y0 x0
+  read b {
+  | 'true(u) => 
+      read u ()
+      cut w : 1
+        call deallocNat w y1
+      read w ()
+      cut w_ : 1
+        call deallocNat w_ y2
+      read w_ ()
+      id d x1
+  | 'false(u) =>
+      read u ()
+      cut s : nat
+        call sub s x1 y1
+      call mod d s y2
+  }
+
+/* Correct values: 2, 3, 0, 0, 2, 3, 4 */
+
+proc test0 (d : nat) =
+  cut x : nat
+    call five x
+  cut y : nat
+    call three y
+  call mod d x y
+  
+proc test1 (d : nat) =
+  cut x : nat
+    call three x
+  cut y : nat
+    call five y
+  call mod d x y
+
+proc test2 (d : nat) =
+  cut x : nat
+    call one x
+  cut y : nat
+    call one y
+  call mod d x y
+
+proc test3 (d : nat) =
+  cut x : nat
+    call eight x
+  cut y : nat
+    call two y
+  call mod d x y
+
+proc test4 (d : nat) =
+  cut x : nat
+    call eight x
+  cut y : nat
+    call three y
+  call mod d x y
+
+proc test5 (d : nat) =
+  cut x : nat
+    call seven x
+  cut y : nat
+    call four y
+  call mod d x y
+
+proc test6 (d : nat) =
+  cut x : nat
+    call four x
+  cut y : nat
+    call seven y
+  call mod d x y

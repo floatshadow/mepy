@@ -1,0 +1,5 @@
+type nat = +{'zero : 1, 'succ : nat}
+
+fail type failure = nat
+
+fail type failure = failure

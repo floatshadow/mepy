@@ -1,0 +1,58 @@
+
+// This is the cobinary number 
+// see https://www.andrew.cmu.edu/user/zhiboc/pdf/colfinfarxiv23.pdf 
+// Things will not work under a strict semantics
+
+type nat = +{'zero : 1, 'succ : nat}
+
+type cobin = +{'b0 : cobin, 'b1 : cobin}
+
+type cobin_observed = +{'b0 : cobin_observed, 'b1 : cobin_observed, 'end : 1}
+
+proc cobin_dealloc (d : 1) (c : cobin) = 
+    read c {
+        | 'b0(c) => call cobin_dealloc d c
+        | 'b1(c) => call cobin_dealloc d c
+    }
+
+proc observe_cobin (d : cobin_observed) (depth : nat) (c : cobin) = 
+    read depth {
+        | 'zero(u) => 
+                cut u2 : 1
+                    call cobin_dealloc u2 c
+                read u2 ()
+                write d 'end(u)
+        | 'succ(n) =>
+            read c {
+                | 'b0(c) => 
+                    cut d2 : cobin_observed
+                        call observe_cobin d2 n c
+                    write d 'b0(d2)
+                | 'b1(c) =>
+                    cut d2 : cobin_observed
+                        call observe_cobin d2 n c
+                    write d 'b1(d2)
+            }
+
+    }
+
+fail proc observe_cobin (d : cobin_observed) (depth : nat) (c : cobin) = 
+    read depth {
+        | 'zero(u) => 
+                cut u : 1
+                    call cobin_dealloc u c
+                read u ()
+                write d 'end(u)
+        | 'succ(n) =>
+            read c {
+                | 'b0(c) => 
+                    cut d2 : cobin_observed
+                        call observe_cobin d2 n c
+                    write d 'b0(d2)
+                | 'b1(c) =>
+                    cut d2 : cobin_observed
+                        call observe_cobin d2 n c
+                    write d 'b1(d2)
+            }
+
+    }

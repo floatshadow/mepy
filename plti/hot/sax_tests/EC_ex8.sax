@@ -1,0 +1,82 @@
+type bool = +{'true: 1, 'false: 1}
+type bin = +{'b0: bin, 'b1: bin, 'e: 1}
+
+proc zero (d: bin) = 
+    cut z : 1 
+        write z ()
+    write d 'e(z)
+
+proc one (d: bin) = 
+    cut x : bin 
+        call zero x 
+    write d 'b1(x) 
+
+proc two (d: bin) = 
+    cut x : bin 
+        call one x 
+    write d 'b0(x)
+
+proc three (d: bin) = 
+    cut x : bin 
+        call two x 
+    write d 'b1(x)
+
+fail proc pred1 (d: bin) (x: bin) = 
+    read x {
+        | 'b1(x1) => write d 'b0(x1) 
+        | 'b0(x1) => 
+            cut y : bin 
+                call pred y x1 
+            write d 'b1(y)
+    }
+
+fail proc pred2 (d: bin) (x: bin) = 
+    read x {
+        | 'b1(x1) => write d 'b0(x1) 
+        | 'b0(x1) => 
+            cut y : bin 
+                call pred y x1 
+            write d 'b1(y)
+        | 'e(u) => read u () 
+                    write d 'e(u)
+    }
+
+fail proc pred3 (d: bin) (x: bin) = 
+    read x {
+        | 'b1(x1) => write d 'b0(x1) 
+        | 'b0(x1) => 
+            cut y : bin 
+                call pred y x1 
+            write d 'b1(y)
+        | 'e(u) => cut u : 1 
+                        write u () 
+                    write d 'e(u)
+    }
+
+proc pred4 (d: bin) (x: bin) = 
+    read x {
+        | 'b1(x1) => write d 'b0(x1) 
+        | 'b0(x1) => 
+            cut y : bin 
+                call pred y x1 
+            write d 'b1(y)
+        | 'e(u) => read u () 
+                    cut w : 1 
+                        write w () 
+                    write d 'e(w)
+    }
+
+proc pred (d: bin) (x: bin) = 
+    read x {
+        | 'b1(x1) => write d 'b0(x1) 
+        | 'b0(x1) => 
+            cut y : bin 
+                call pred y x1 
+            write d 'b1(y)
+        | 'e(u) => write d 'e(u)
+    }
+
+proc test_pred (d: bin) = 
+    cut x : bin 
+        call two x
+    call pred d x

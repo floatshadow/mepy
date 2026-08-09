@@ -1,0 +1,5 @@
+/* Fail: Destinations and parameters must be pairwise distinct */
+
+fail proc identity (d : 1) (d : 1) =
+  read d ()
+  write d ()

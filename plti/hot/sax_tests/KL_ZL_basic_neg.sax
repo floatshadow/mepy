@@ -1,0 +1,21 @@
+// Duplicate labels
+fail type dupe = +{'tag : 1, 'tag : bin}
+
+// Non-contractive type
+fail type nonContract = nonContract
+
+// Multiple definitions
+type t = 1
+type nat = +{'zero : 1, 'succ : nat}
+fail type t = nat
+
+// Undefined type reference
+fail type bad = undefined
+
+// Unused value
+type bool = +{'false : 1, 'true : 1}
+fail proc unuse (d : 1) (x: bool) =
+       read x {
+       | 'false(u) => id d u
+       | 'true(u) => write d ()
+       }

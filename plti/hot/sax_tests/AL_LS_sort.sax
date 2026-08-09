@@ -1,0 +1,162 @@
+/* Implements insertion sort */
+
+type nat = +{'zero : 1, 'succ : nat}
+type natList = +{'nil : 1, 'cons : nat * natList}
+
+
+/* Make some numbers */
+proc inc (d : nat) (x : nat) =
+  write d 'succ(x)
+
+proc zero (d : nat) =
+  cut z : 1
+    write z ()
+  write d 'zero(z)
+
+proc one (d : nat) =
+  cut x : nat
+    call zero x
+  call inc d x
+
+proc two (d : nat) =
+  cut x : nat
+    call one x
+  call inc d x
+
+proc three (d : nat) =
+  cut x : nat
+    call two x
+  call inc d x
+
+/* Helpers for naturals */
+
+proc deallocNat (d : 1) (x : nat) =
+  read x {
+  | 'zero(u) => id d u
+  | 'succ(x) => call deallocNat d x
+  }
+
+proc dupNat (d : nat * nat) (x : nat) =
+  read x {
+  | 'zero(u) =>
+      cut d1 : nat
+	      write d1 'zero(u)
+      cut d2 : nat
+	      cut w : 1
+	        write w ()
+	      write d2 'zero(w)
+      write d (d1, d2)
+  | 'succ(x) =>
+      cut y : nat * nat
+        call dupNat y x
+      read y (y1, y2)
+      cut d1 : nat
+        call inc d1 y1
+      cut d2 : nat
+        call inc d2 y2
+      write d (d1, d2)
+  }
+
+/* Insertion sort helpers */
+
+proc nil (d : natList) = 
+  cut u : 1
+    write u ()
+  write d 'nil(u)
+
+proc cons (d : natList) (x : nat) (xs : natList) = 
+  cut t : nat * natList
+    write t (x, xs)
+  write d 'cons(t)
+
+proc minAndMax (d : nat * nat) (x : nat) (y : nat) = 
+  cut t : nat * nat
+    call dupNat t x
+  read t (x0, x1)
+  read x0 {
+  | 'zero(u) => 
+      read u ()
+      write d (x1, y)
+  | 'succ(x2) => 
+      read y {
+      | 'zero(u) => 
+          cut w : 1
+            call deallocNat w x2
+          read w ()
+          cut z : nat
+            write z 'zero(u)
+          write d (z, x1)
+      | 'succ(y2) =>
+          cut w : 1
+            call deallocNat w x1
+          read w ()
+          cut ttt : nat * nat
+            call minAndMax ttt x2 y2
+          read ttt (min, max)
+          cut succMin : nat
+            write succMin 'succ(min)
+          cut succMax : nat
+            write succMax 'succ(max)
+          write d (succMin, succMax)
+      }
+  }
+
+/* Insert x at the right position in the sorted list l */
+proc insert (d : natList) (l : natList) (x : nat) =
+  read l {
+  | 'nil(u) => 
+      cut n : natList
+        write n 'nil(u)
+      call cons d x n
+  | 'cons(t) => 
+      read t (y, ys)
+      cut s : nat * nat
+        call minAndMax s x y
+      read s (min, max)
+      cut res : natList
+        call insert res ys max
+      cut r : nat * natList
+        write r (min, res)
+      write d 'cons(r)
+  }
+
+proc insertionSort (d : natList) (l : natList) =
+  read l {
+  | 'nil(u) => write d 'nil(u)
+  | 'cons(t) => 
+      read t (x, xs)
+      cut sortedxs : natList
+        call insertionSort sortedxs xs
+      call insert d sortedxs x
+  }
+
+/* Make some lists */
+/* [2, 0, 2, 3, 1] */
+proc unsorted (d : natList) = 
+  cut n : natList
+    call nil n
+  cut x : nat
+    call one x
+  cut l1 : natList
+    call cons l1 x n
+  cut x_ : nat
+    call three x_
+  cut l2 : natList
+    call cons l2 x_ l1
+  cut x__ : nat
+    call two x__
+  cut l3 : natList
+    call cons l3 x__ l2
+  cut x___ : nat
+    call zero x___
+  cut l4 : natList
+    call cons l4 x___ l3
+  cut x____ : nat
+    call two x____
+  call cons d x____ l4
+  
+/* [0, 1, 2, 2, 3] */
+proc sorted (d : natList) =
+  cut l : natList
+    call unsorted l
+  call insertionSort d l

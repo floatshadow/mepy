@@ -1,0 +1,13 @@
+fail type duplicate_labels = +{'foo : 1, 'foo : 1}
+type duplicate = +{'duplicate : duplicate}
+fail type contractive = duplicate
+fail type duplicate = +{'duplicate : duplicate}
+fail type undefined = +{'undefined : oops}
+type a = +{'a : a, 'b : b, 'c : c}
+type b = +{'a : a, 'b : b, 'c : c}
+type c = +{'a : a, 'b : b, 'c : c}
+fail proc undefined (x : 1) = call oops x
+proc a (x : 1) (y : 1) = call b x y
+proc b (x : 1) (y : 1) = call a x y
+fail proc not_distinct_1 (x : 1) (x : 1) = id x x
+fail proc not_distinct_2 (y : 1) (x : 1) (x : 1) = read x () id y x

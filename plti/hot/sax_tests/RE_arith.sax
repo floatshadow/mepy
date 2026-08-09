@@ -1,0 +1,107 @@
+type nat = +{'zero : 1, 'succ : nat}
+
+proc zero (d : nat) =
+    cut u : 1
+        write u ()
+    write d 'zero(u)
+
+proc one (d : nat) =
+    cut z : nat
+        call zero z
+    write d 'succ(z)
+
+proc two (d : nat) =
+    cut z : nat
+        call one z
+    write d 'succ(z)
+
+proc dealloc_nat (d : 1) (n : nat) =
+    read n {
+    | 'zero(u) => id d u
+    | 'succ(n0) => call dealloc_nat d n0
+    }
+
+proc dup_nat (d : nat * nat) (n : nat) =
+    read n {
+    | 'zero(u) => cut d1 : nat
+                    write d1 'zero(u)
+                  cut d2 : nat
+                    cut w : 1
+                        write w ()
+                    write d2 'zero(w)
+                  write d (d1, d2)
+    | 'succ(n0) => cut res : nat * nat
+                     call dup_nat res n0
+                   read res (n1, n2)
+                   cut d1 : nat
+                     write d1 'succ(n1)
+                   cut d2 : nat
+                     write d2 'succ(n2)
+                   write d (d1, d2)
+    }
+proc add (d : nat) (n : nat) (m : nat) =
+    read n {
+    | 'zero(u) => read u () id d m
+    | 'succ(n0) => cut res : nat
+                     call add res n0 m
+                   write d 'succ(res)
+    }
+
+
+proc mult (d : nat) (n : nat) (m : nat) =
+    read n {
+    | 'zero(u) => cut w : 1
+                    call dealloc_nat w m
+                  read w ()
+                  write d 'zero(u)
+    | 'succ(n0) => cut x : nat * nat
+                     call dup_nat x m
+                   read x (m1, m2)
+                   cut res : nat
+                    call mult res n0 m1
+                   call add d res m2
+    }
+
+proc exp (d : nat) (base : nat) (pow : nat) =
+    read pow {
+    | 'zero(u) => cut w : 1
+                    call dealloc_nat w base
+                  read w ()
+                  read u ()
+                  call one d
+    | 'succ(p0) => cut x : nat * nat
+                     call dup_nat x base
+                   read x (b1, b2)
+                   cut res : nat
+                     call exp res b1 p0
+                   call mult d b2 res
+    }
+
+proc four (d : nat) =
+    cut x : nat
+      call two x
+    cut y : nat
+      call two y
+    call exp d x y
+
+proc tetra (d : nat) (a : nat) (n : nat) =
+    read n {
+    | 'zero(u) => cut w : 1
+                    call dealloc_nat w a
+                  read u ()
+                  read w ()
+                  call one d
+    | 'succ(n0) => cut x : nat * nat
+                     call dup_nat x a
+                   read x (a1, a2)
+                   cut res : nat
+                     call tetra res a1 n0
+                   call exp d a2 res
+    }
+
+proc twofiftysix (d : nat) =
+    cut base : nat
+      call four base
+    cut up : nat
+      call two up
+    call tetra d base up

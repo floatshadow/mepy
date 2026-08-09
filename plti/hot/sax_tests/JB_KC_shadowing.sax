@@ -1,0 +1,105 @@
+// Shadowing
+
+// Basic shadowing
+fail proc shadow_defnd_variable (d:1) = 
+    cut x : 1
+        write x ()
+    read x () 
+    cut x : 1
+        write x ()
+    id d x
+
+fail proc shadow_inuse_var (d:1) = 
+    cut x : 1
+        write x ()
+    cut x : 1
+        write x ()
+    id d x
+
+// Shadowing argument
+fail proc shadow_used_arg (d:1) (x:1) = 
+    read x () 
+    cut x : 1
+        write x ()
+    id d x
+
+fail proc shadow_inuse_arg (d:1) (x:1) = 
+    cut x : 1
+        write x ()
+    id d x
+
+fail proc shadow_arg_with_arg (d:1) (x:1) (y:1) (x:1)= 
+    id d x
+
+
+// Shadowing destination
+fail proc shadow_dest_with_arg (d:1) (d:1)= 
+    cut x : 1
+        write x ()
+    id d x
+
+fail proc shadow_dest_with_var (d:1) = 
+    cut d : 1
+        write d ()
+    id d d
+
+fail proc shadow_cut_dest (d:1) = 
+    cut x : 1
+        cut x : 1
+            write x ()
+        id x x
+    id d x
+
+fail proc cut_dest_must_be_read (d:1) = 
+    cut x : 1
+        cut y : 1
+            write y ()
+        write x ()
+    id d x
+
+fail proc cut_dest_must_be_written (d:1) = 
+    cut x : 1
+        cut y : 1
+            write x ()
+        write x ()
+    id d x
+
+type bool = +{'true : 1, 'false : 1}
+
+proc cut_shadowing_with_read (d:1) =
+    cut u : 1
+        write u ()
+    cut b : bool
+        write b 'true(u)
+    cut y : 1
+        read b {
+            | 'true(u) => read u ()
+                          write y ()
+            | 'false(u) => id y u
+        }
+    id d y
+
+fail proc cut_shadowing_in_read (d:1) =
+    cut u : 1
+        write u ()
+    cut b : bool
+        write b 'true(u)
+    cut y : 1
+        read b {
+            | 'true(b) => read b ()
+                          cut b : 1
+                            write b ()
+                          id y b
+            | 'false(b) => id y b
+        }
+    id d y
+
+type a = 1
+proc cut_shadowing_later_in_cut (d:1) = 
+    cut x : 1
+        cut y : 1
+            write y ()
+        id x y
+    cut y : a
+        id y x
+    id d y

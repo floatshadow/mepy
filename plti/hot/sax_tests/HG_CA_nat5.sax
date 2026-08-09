@@ -1,0 +1,128 @@
+type nat = +{'zero : 1, 'succ : nat}
+
+proc zero (d : nat) =
+    cut u : 1
+        write u ()
+    write d 'zero (u)
+
+proc succ (d : nat) (x : nat) =
+    read x {
+    | 'zero (x0) =>
+        cut y : nat
+            write y 'zero (x0)
+            write d 'succ (y)
+    | 'succ (x1) =>
+        cut y : nat
+            write y 'succ (x1)
+            write d 'succ (y)
+    }
+
+proc pred (d : nat) (x : nat) =
+    read x {
+    | 'zero (x0) => write d 'zero (x0)
+    | 'succ (x1) => id d x1
+    }
+
+proc add (d : nat) (x1 : nat) (x2 : nat) =
+    read x1 {
+    | 'zero (x0) =>
+        read x0 ()
+        id d x2
+    | 'succ (x1) =>
+        cut temp : nat
+            call add temp x1 x2
+            write d 'succ (temp)
+    }
+
+proc dup_nat (d : nat * nat) (x : nat) =
+    read x {
+    | 'zero (x0) =>
+        cut y1 : nat
+            write y1 'zero (x0)
+        cut y2 : nat
+            cut y3 : 1
+                write y3 ()
+            write y2 'zero (y3)
+        write d (y1, y2)
+    | 'succ (x1) =>
+        cut y : nat * nat
+            call dup_nat y x1
+        read y (y1, y2)
+        cut n1 : nat
+            write n1 'succ(y1)
+        cut n2 : nat
+            write n2 'succ(y2)
+        write d (n1, n2)
+    }
+
+proc dealloc_nat (d : 1) (x : nat) =
+    read x {
+    | 'zero (u) => id d u
+    | 'succ (n) => call dealloc_nat d n
+    }
+
+proc mult (d : nat) (x1 : nat) (x2 : nat) =
+    read x1 {
+    | 'zero (x0) =>
+        cut u : 1
+            call dealloc_nat u x2
+        read u ()
+        write d 'zero (x0)
+    | 'succ (x1) =>
+        cut x2_dup : nat * nat
+        call dup_nat x2_dup x2
+        read x2_dup (y1, y2)
+        cut temp : nat
+        call mult temp x1 y1
+        call add d y2 temp
+    }
+
+proc sub (d : nat) (x1 : nat) (x2 : nat) =
+    read x1 {
+    | 'zero (x0) =>
+        cut tmp : 1
+            call dealloc_nat tmp x2
+            read tmp ()
+        write d 'zero (x0)
+    | 'succ (x1) => read x2 {
+        | 'zero (x0) =>
+            read x0 ()
+            write d 'succ (x1)
+        | 'succ (x2) => call sub d x1 x2
+      }
+    }
+
+proc one (d : nat) =
+    cut n : nat
+        call zero n
+    call succ d n
+
+proc two (d : nat) =
+    cut n : nat
+        call one n
+    call succ d n
+
+proc three (d : nat) =
+    cut n : nat
+        call one n
+    cut m : nat
+        call two m
+    call add d m n
+
+proc four (d : nat) =
+    cut n : nat
+        call two n
+    cut m : nat
+        call two m
+    call mult d m n
+
+proc five (d : nat) =
+    cut n : nat
+        call two n
+    cut m : nat
+        call four m
+    cut k : nat
+        call three k
+    cut mn : nat
+        call mult mn m n
+    call sub d mn k

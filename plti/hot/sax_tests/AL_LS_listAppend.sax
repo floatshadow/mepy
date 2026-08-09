@@ -1,0 +1,85 @@
+/* Create and append lists of natural numbers */
+
+type nat = +{'zero : 1, 'succ : nat}
+type natList = +{'nil : 1, 'cons : nat * natList}
+
+/* Make some numbers */
+proc inc (d : nat) (x : nat) =
+  write d 'succ(x)
+
+proc zero (d : nat) =
+  cut z : 1
+    write z ()
+  write d 'zero(z)
+
+proc one (d : nat) =
+  cut z : nat
+    call zero z
+  call inc d z
+
+proc two (d : nat) =
+  cut o : nat
+    call one o
+  call inc d o
+
+/* Append */
+proc append (d : natList) (l1 : natList) (l2 : natList) = 
+  read l1 {
+  | 'nil(u) => 
+      read u ()
+      id d l2
+  | 'cons(l1s) => 
+      read l1s (x, xs)
+      cut res : natList
+        call append res xs l2
+      cut t : nat * natList
+        write t (x, res)
+      write d 'cons(t)
+  }
+
+/* Make some lists */
+proc nil (d : natList) = 
+  cut u : 1
+    write u ()
+  write d 'nil(u)
+
+proc cons (d : natList) (x : nat) (xs : natList) = 
+  cut t : nat * natList
+    write t (x, xs)
+  write d 'cons(t)
+
+/* [0, 0, 0] */
+proc zeroes (d : natList) = 
+  cut n : natList
+    call nil n
+  cut z : nat
+    call zero z
+  cut l1 : natList
+    call cons l1 z n
+  cut z_ : nat
+    call zero z_
+  cut l2 : natList
+    call cons l2 z_ l1
+  cut z__ : nat
+    call zero z__
+  call cons d z__ l2
+
+/* [1, 1] */
+proc ones (d : natList) = 
+  cut n : natList
+    call nil n
+  cut o : nat
+    call one o
+  cut l1 : natList
+    call cons l1 o n
+  cut o_ : nat
+    call one o_
+  call cons d o_ l1
+
+/* Append the lists */
+proc onesAndZeroes (d : natList) =
+  cut zs : natList
+    call zeroes zs
+  cut os : natList
+    call ones os
+  call append d zs os

@@ -1,0 +1,234 @@
+type bool = +{'true : 1, 'false: 1}
+type nat = +{'zero : 1, 'succ : nat}
+type boolornat = +{'bool: bool, 'nat : nat}
+type boollist = +{'nil : 1, 'cons : bool * boollist}
+type natlist = +{'nil : 1, 'cons : nat * natlist}
+type list = +{'nil : 1, 'cons : boolornat * list}
+
+proc true (x:bool) = cut u :1
+                      write u ()
+                    write x 'true(u)
+
+proc false (x:bool) = cut u :1
+                      write u ()
+                    write x 'false(u)
+
+proc iforgor2 (r:1) (u:1) (v:1) =
+  read u ()
+  id r v
+
+
+proc iforgorbool (x:1) (b:bool) = read b {
+				  | 'true(u) => id x u
+				  | 'false(u) => id x u
+}
+
+proc and (x:bool) (a:bool) (b:bool) = read a {
+					| 'true(u) => 	read u ()
+							id x b
+					| 'false(u) => cut f : 1
+							 call iforgorbool f b
+						       cut f2 : 1
+							 call iforgor2 f2 f u
+						       read f2 ()
+						       call false x
+					}
+
+fail proc sad (x: bool) (a: bool) (b: bool) =
+	read x {
+	| 'false(u) =>	call sad a b
+	| 'true(u) => call sad b a		
+	}
+
+proc zero (x:nat) = cut u :1
+                      write u ()
+                    write x 'zero(u)
+
+proc succ (r:nat) (x:nat) = write r 'succ(x)
+
+proc pred (r:nat) (x:nat) = read x {
+  | 'zero(u) => cut n : nat
+                   write n 'zero(u)
+                id r n
+  | 'succ(n) => id r n
+ }
+
+proc one (o:nat) = cut z : nat
+                     call zero z
+                   call succ o z
+
+proc two (tw:nat) = cut o : nat
+                     call one o
+                   call succ tw o
+
+proc three (th:nat) = cut tw : nat
+                       call two tw
+                     call succ th tw
+
+proc append (r:natlist) (l1:natlist) (l2:natlist) = 
+  read l1 {
+  | 'nil(u) => 	read u ()
+		id r l2
+  | 'cons(p) => read p (hd,tl)
+		cut tll2 : natlist
+                call append tll2 tl l2
+                cut respair : nat * natlist
+                  write respair (hd,tll2)
+                write r 'cons(respair)
+  }
+
+proc revappend (r:natlist) (l1:natlist) (l2:natlist) = 
+  read l1 {
+  | 'nil(u) => 	read u ()
+		id r l2
+  | 'cons(p) => read p (hd,tl)
+		cut tlpair : nat * natlist
+                   write tlpair (hd,l2)
+                cut tl2 : natlist
+                   write tl2 'cons(tlpair)
+                call revappend r tl tl2
+  }
+
+proc nillist (n:natlist) =
+  cut u : 1
+    write u ()
+  write n 'nil(u)
+
+proc iforgornat (r:1) (x:nat) = read x {
+        | 'zero(u) => id r u
+        | 'succ(x) => call iforgornat r x
+}
+
+proc iforgornatlistpair (r:1) (p: nat * natlist) =
+	read p (hd,tl)
+	cut u : 1
+	  call iforgornat u hd
+	cut v : 1
+	  call iforgornatlist v tl
+	call iforgor2 r u v
+
+proc iforgornatlist (r:1) (l:natlist) = read l {
+	| 'nil(u) => id r u
+        | 'cons(p) => call iforgornatlistpair r p
+}
+
+proc eq0 (r:bool) (n:nat) = read n {
+	| 'zero(u) => 	read u ()
+			call true r
+        | 'succ(n) => 	cut u : 1
+			  call iforgornat u n
+			read u ()
+			call false r
+}
+
+proc eqnat (r:bool) (n:nat) (m:nat) = 
+  read n {
+   | 'zero(u) =>read u ()
+		call eq0 r m
+   | 'succ(n1) => read m {
+		   | 'zero(u) => cut f : 1
+					call iforgornat f n1 
+				 cut f2 : 1
+					call iforgor2 f2 f u
+				 read f2 ()
+				 call false r
+		   | 'succ(m1) => call eqnat r n1 m1
+		   }
+   }
+
+proc eqlist (r:bool) (l1:natlist) (l2:natlist) =
+  read l1 {
+    | 'nil(u) => read l2 {
+                   | 'nil(v) => cut f : 1
+                                  call iforgor2 f u v
+                                read f ()
+				call true r
+		   | 'cons(p) => cut f : 1
+				   call iforgornatlistpair f p
+				 cut f2 : 1
+				   call iforgor2 f2 f u
+				 read f2 ()
+				 call false r
+		  }
+    | 'cons(p) => read l2 {
+                   | 'nil(u) => cut f : 1
+				  call iforgornatlistpair f p
+				cut f2 : 1
+				  call iforgor2 f2 f u
+				read f2 () 
+				call false r
+		   | 'cons(q) => read p (hd1,tl1)
+				 read q (hd2,tl2)
+				 cut hdeq : bool
+				 call eqnat hdeq hd1 hd2
+				 cut tleq : bool
+				 call eqlist tleq tl1 tl2
+				 call and r hdeq tleq
+		    }
+    }
+
+proc rev (r:natlist) (l:natlist) = 
+  cut e : natlist
+    call nillist e
+  call revappend r l e
+
+proc onetwothree (l:natlist) =
+  cut o : nat
+    call one o
+  cut tw : nat
+    call two tw
+  cut th : nat
+    call three th
+  cut n : natlist
+    call nillist n
+  cut thpair : nat * natlist
+    write thpair (th,n)
+  cut thlist : natlist
+    write thlist 'cons(thpair)
+  cut twthpair : nat * natlist
+    write twthpair (tw,thlist)
+  cut twthlist : natlist
+    write twthlist 'cons(twthpair)
+  cut pair : nat * natlist
+    write pair (o,twthlist)
+  write l 'cons(pair)
+
+proc threetwoone (l:natlist) = 
+  cut o : nat 
+    call one o
+  cut tw : nat
+    call two tw
+  cut th : nat
+    call three th
+  cut n : natlist
+    call nillist n
+  cut opair : nat * natlist
+    write opair (o,n)
+  cut olist : natlist
+    write olist 'cons(opair)
+  cut twopair : nat * natlist
+    write twopair (tw,olist)
+  cut twolist : natlist
+    write twolist 'cons(twopair)
+  cut pair : nat * natlist
+    write pair (th,twolist)
+  write l 'cons(pair)
+ 
+proc onetwothreereveqthreetwoone (b:bool) =
+  cut l1 : natlist
+	call onetwothree l1
+  cut l2 : natlist
+	call threetwoone l2
+  cut l1_rev : natlist
+	call rev l1_rev l1
+  call eqlist b l1_rev l2
+
+proc onetwothreerevneqonetwothree (b:bool) = 
+cut l1 : natlist
+        call onetwothree l1
+  cut l2 : natlist
+        call onetwothree l2
+  cut l1_rev : natlist
+        call rev l1_rev l1
+  call eqlist b l1_rev l2
+

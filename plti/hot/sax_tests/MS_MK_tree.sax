@@ -1,0 +1,72 @@
+type student = +{ 'mikail : 1, 'matthew : 1 }
+
+type tree = +{ 'leaf : student, 'node : tree * tree }
+
+proc leaf_mikail (d : tree) =
+  cut u : 1
+    write u ()
+    cut s : student
+      write s 'mikail(u)
+      write d 'leaf(s)
+
+proc leaf_matthew (d : tree) =
+  cut u : 1
+    write u ()
+    cut s : student
+      write s 'matthew(u)
+      write d 'leaf(s)
+
+proc make_node (d : tree) (l : tree) (r : tree) =
+  cut n : tree * tree
+    write n (l, r)
+    write d 'node(n)    
+
+proc test_tree (d : tree) =
+  cut m1 : tree
+    cut l1 : tree
+      call leaf_mikail l1
+      cut l2 : tree
+        call leaf_matthew l2
+        call make_node m1 l1 l2
+    cut m2 : tree
+      cut n1 : tree
+        call leaf_mikail n1
+        cut n2 : tree
+          cut l1 : tree
+            call leaf_mikail l1
+            cut l2 : tree
+              call leaf_matthew l2
+              call make_node n2 l2 l1
+          call make_node m2 n1 n2
+      call make_node d m1 m2
+
+proc swap_student (d : student) (s : student) =
+  read s {
+  | 'mikail(u) => write d 'matthew(u)
+  | 'matthew(u) => write d 'mikail(u)
+  }
+
+proc swap_tree (d : tree) (t : tree) =
+  read t {
+  | 'leaf(s) => cut s1 : student
+                  call swap_student s1 s
+                  write d 'leaf(s1)
+  | 'node(p) => read p (l, r)
+                  cut l1 : tree
+                    call swap_tree l1 l
+                    cut r1 : tree
+                      call swap_tree r1 r
+                      cut p1 : tree * tree
+                        write p1 (l1, r1)
+                        write d 'node(p1)
+  }
+
+proc test_tree_swap (d : tree) =
+  cut t : tree
+    call test_tree t
+    call swap_tree d t
+
+proc test_tree_swap2 (d : tree) =
+  cut t : tree
+    call test_tree_swap t
+    call swap_tree d t

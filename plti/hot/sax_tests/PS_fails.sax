@@ -1,0 +1,45 @@
+fail proc weakening (x : 1) (y : 1) =
+  write x ()
+
+fail proc weakening1 (x : 1) (y : 1) (z : +{'t : 1, 'f : 1}) =
+  read z {
+  | 't(u) => id x u
+  | 'f(u) => id x u
+  }
+
+fail proc weakening2 (x : 1) (y : 1) (z : +{'t : 1, 'f : 1}) =
+  read z {
+  | 't(u) => id x y
+  | 'f(u) => id x y
+  }
+
+fail proc weakening3 (x : 1) (y : 1) (z : +{'t : 1, 'f : 1}) =
+  read z {
+  | 't(u) => id x u
+  | 'f(u) => id x y
+  }
+
+fail proc weakening4 (x : 1) (y : 1) (z : +{'t : 1, 'f : 1}) =
+  read z {
+  | 't(u) => id x y
+  | 'f(u) => id x u
+  }
+
+fail proc weakening5 (x : 1) (y : 1) =
+  cut z : 1
+    write z ()
+  read z ()
+  write x ()
+
+fail proc contraction (x : 1 * 1) (y : 1) =
+  write x (y, y)
+
+fail proc contraction1 (x : 1) (y : 1) =
+  read y () id x y
+
+fail proc contraction2 (x : 1) (y : 1) =
+  cut z : 1
+    read y ()
+    write z ()
+  read y ()
+  write x ()

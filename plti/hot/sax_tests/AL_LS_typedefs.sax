@@ -1,0 +1,15 @@
+/* Test empty sums, and other type problems */
+
+type nat = +{'zero : 1, 'succ : nat}
+
+/* 3. Sums may not contain any duplicate labels */
+fail type bin = +{'e : 1, 'bit : 1, 'bit : 1}
+fail type nested_sum = +{'left : 1, 'right : +{'right : 1, 'right : 1}}
+type nested_sum = +{'left : 1, 'right : +{'left : 1, 'right : 1}} // This is OK
+
+/* 4. Type definitions must be contractive */
+fail type nat2 = nat
+
+/* 5. Type names may be defined at most once */
+fail type nat = +{'zero : 1, 'succ : 1}
+

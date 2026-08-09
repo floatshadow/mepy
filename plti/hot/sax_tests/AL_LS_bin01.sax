@@ -1,0 +1,247 @@
+/* Bitwise operators on binary numbers and bitMatch */
+
+type bin = +{'b0 : bin, 'b1 : bin, 'e : 1}
+
+proc zero (d : bin) =
+  cut u : 1
+    write u ()
+  write d 'e(u)
+
+proc one (d : bin) =
+  cut x : bin
+    call zero x
+  write d 'b1(x)
+
+/* Increment a binary number. */
+proc succ (d : bin) (x : bin) =
+  read x {
+  | 'b0(x0) => write d 'b1(x0)
+  | 'b1(x1) => cut y : bin
+                  call succ y x1
+               write d 'b0(y)
+  | 'e(u) => read u ()
+             call one d
+  }
+
+/* Deallocate a binary number. */
+proc dealloc_bin (d : 1) (x : bin) =
+  read x {
+  | 'e(u) => id d u
+  | 'b0(x0) => call dealloc_bin d x0
+  | 'b1(x1) => call dealloc_bin d x1
+  }
+
+/* Duplicate a binary number. */
+proc dup_bin (d : bin * bin) (x : bin) =
+  read x {
+  | 'b0(x) => cut y : bin * bin
+                 call dup_bin y x
+              read y (y1, y2)
+              cut d1 : bin
+                write d1 'b0(y1)
+              cut d2 : bin
+                write d2 'b0(y2)
+              write d (d1, d2)
+  | 'b1(x) => cut y : bin * bin
+                 call dup_bin y x
+              read y (y1, y2)
+              cut d1 : bin
+                write d1 'b1(y1)
+              cut d2 : bin
+                write d2 'b1(y2)
+              write d (d1, d2)
+  | 'e(u) => cut d1 : bin
+                write d1 'e(u)
+             cut d2 : bin
+                cut w : 1
+                   write w ()
+                write d2 'e(w)
+             write d (d1, d2)
+  }
+
+/* Bitwise AND */
+proc and (d : bin) (x : bin) (y : bin) =
+  read x {
+  /* If x is empty, the rest are zeros. */
+  | 'e(u) =>
+      cut w : 1
+        call dealloc_bin w y
+      read w ()
+      write d 'e(u)
+  /* This bit is automatically zero. */
+  | 'b0(x0) =>
+      read y {
+      | 'e(u) =>
+          cut w : 1
+            call dealloc_bin w x0
+          read w ()
+          write d 'e(u)
+      | 'b0(y0) =>
+          cut d1 : bin
+            call and d1 x0 y0
+          write d 'b0(d1)
+      | 'b1(y1) =>
+          cut d1 : bin
+            call and d1 x0 y1
+          write d 'b0(d1)
+      }
+  /* Bit depends on y. */
+  | 'b1(x1) =>
+      read y {
+      | 'e(u) =>
+          cut w : 1
+            call dealloc_bin w x1
+          read w ()
+          write d 'e(u)
+      | 'b0(y0) =>
+          cut d1 : bin
+            call and d1 x1 y0
+          write d 'b0(d1)
+      | 'b1(y1) =>
+          cut d1 : bin
+            call and d1 x1 y1
+          write d 'b1(d1)
+      }
+  }
+
+/* Bitwise OR */
+proc or (d : bin) (x : bin) (y : bin) =
+  read x {
+  /* If x is empty, the rest matches y. */
+  | 'e(u) =>
+      read u ()
+      id d y
+  /* Bit depends on y. */
+  | 'b0(x0) =>
+      read y {
+      | 'e(u) =>
+          read u ()
+          write d 'b0(x0)
+      | 'b0(y0) =>
+          cut d1 : bin
+            call or d1 x0 y0
+          write d 'b0(d1)
+      | 'b1(y1) =>
+          cut d1 : bin
+            call or d1 x0 y1
+          write d 'b1(d1)
+      }
+  /* This bit is automatically 1. */
+  | 'b1(x1) =>
+      read y {
+      | 'e(u) =>
+          read u ()
+          write d 'b1(x1)
+      | 'b0(y0) =>
+          cut d1 : bin
+            call or d1 x1 y0
+          write d 'b1(d1)
+      | 'b1(y1) =>
+          cut d1 : bin
+            call or d1 x1 y1
+          write d 'b1(d1)
+      }
+  }
+
+/* Bitwise NEGATION */
+proc neg (d : bin) (x : bin) =
+  read x {
+  | 'e(u) => write d 'e(u)
+  | 'b0(x0) =>
+      cut d1 : bin
+        call neg d1 x0
+      write d 'b1(d1)
+  | 'b1(x1) =>
+      cut d1 : bin
+        call neg d1 x1
+      write d 'b0(d1)
+  }
+
+/* bitMatch: return matching bits in x and y */
+proc bitMatch (d : bin) (x : bin) (y : bin) =
+  /* Duplicate x and y - we will need twice */
+  cut xs : bin * bin
+    call dup_bin xs x
+  read xs (x1, x2)
+  cut ys : bin * bin
+    call dup_bin ys y
+  read ys (y1, y2)
+  /* Get all matching ones */
+  cut matching_ones : bin
+    call and matching_ones x1 y1
+  /* Get all matching zeros */
+  cut matching_zeros : bin
+    /* Flip x2 and y2 and get matching ones */
+    cut neg_x : bin
+      call neg neg_x x2
+    cut neg_y : bin
+      call neg neg_y y2
+    call and matching_zeros neg_x neg_y
+  /* Or the matchings ones and matching zeros */
+  call or d matching_ones matching_zeros
+
+/* TESTS */
+/* 1001 */
+proc _1001 (d : bin) =
+  cut u : 1
+    write u ()
+  cut x0 : bin
+    write x0 'e(u)
+  cut x1 : bin
+    write x1 'b1(x0)
+  cut x2 : bin
+    write x2 'b0(x1)
+  cut x3 : bin
+    write x3 'b0(x2)
+  write d 'b1(x3)
+
+proc _110 (d : bin) =
+  cut u : 1
+    write u ()
+  cut x0 : bin
+    write x0 'e(u)
+  cut x1 : bin
+    write x1 'b1(x0)
+  cut x2 : bin
+    write x2 'b1(x1)
+  write d 'b0(x2)
+
+proc _1001_and_1001 (d : bin) =
+  cut x1 : bin
+    call _1001 x1
+  cut x2 : bin
+    call _1001 x2
+  call and d x1 x2
+
+proc _1001_and_110 (d : bin) =
+  cut x1 : bin
+    call _1001 x1
+  cut x2 : bin
+    call _110 x2
+  call and d x1 x2
+
+proc _1001_or_110 (d : bin) =
+  cut x1 : bin
+    call _1001 x1
+  cut x2 : bin
+    call _110 x2
+  call or d x1 x2
+
+proc neg_1001 (d : bin) =
+  cut x1 : bin
+    call _1001 x1
+  call neg d x1
+
+proc bitmatch_1001_1001 (d : bin) =
+  cut x1 : bin
+    call _1001 x1
+  cut x2 : bin
+    call _1001 x2
+  call bitMatch d x1 x2
+
+proc bitmatch_1001_110 (d : bin) =
+  cut x1 : bin
+    call _1001 x1
+  cut x2 : bin
+    call _110 x2
+  call bitMatch d x1 x2

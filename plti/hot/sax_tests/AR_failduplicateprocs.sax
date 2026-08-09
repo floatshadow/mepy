@@ -1,0 +1,3 @@
+proc hello (d : 1) = write d ()
+
+fail proc hello (x : 1) = write d ()

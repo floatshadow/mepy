@@ -1,0 +1,311 @@
+type bool = +{'t : 1, 'f : 1}
+type nat = +{'zero : 1, 'succ : nat}
+type rook = nat * nat
+type list = +{'nil : 1, 'cons : rook * list}
+
+proc free_bool (d : 1) (a : bool) =
+  read a {
+  | 't(u) =>
+    id d u
+  | 'f(u) =>
+    id d u
+  }
+
+proc and (d : bool) (a : bool) (b : bool) =
+  read a {
+  | 't(u) =>
+    read u ()
+    id d b
+  | 'f(u) =>
+    read u ()
+    cut u_ : 1
+    call free_bool u_ b
+    write d 'f(u_)
+  }
+
+proc or (d : bool) (a : bool) (b : bool) =
+  read a {
+  | 't(u) =>
+    read u ()
+    cut u_ : 1
+    call free_bool u_ b
+    write d 't(u_)
+  | 'f(u) =>
+    read u ()
+    id d b
+  }
+
+proc free_nat (d : 1) (a : nat) =
+  read a {
+  | 'zero(u) =>
+    id d u
+  | 'succ(x) =>
+    call free_nat d x
+  }
+
+proc dup_nat (d : nat * nat) (a : nat) =
+  read a {
+  | 'zero(u) =>
+    cut a1 : nat
+      write a1 'zero(u)
+    cut a2 : nat
+      cut u_ : 1
+      write u_ ()
+      write a2 'zero(u_)
+    write d (a1, a2)
+  | 'succ(x) =>
+    cut p : nat * nat
+    call dup_nat p x
+    read p (x1, x2)
+    cut a1 : nat
+    write a1 'succ(x1)
+    cut a2 : nat
+    write a2 'succ(x2)
+    write d (a1, a2)
+  }
+
+proc free_rook (d : 1) (r : rook) =
+  read r (x, y)
+  cut u : 1
+  call free_nat u x
+  read u ()
+  call free_nat d y
+
+proc dup_rook (d : rook * rook) (r : rook) =
+  read r (x, y)
+  cut p : nat * nat
+  call dup_nat p x
+  read p (x1, x2)
+  cut q : nat * nat
+  call dup_nat q y
+  read q (y1, y2)
+  cut r1 : rook
+  write r1 (x1, y1)
+  cut r2 : rook
+  write r2 (x2, y2)
+  write d (r1, r2)
+
+proc free_list (d : 1) (rs : list) =
+  read rs {
+  | 'nil(u) =>
+    id d u
+  | 'cons(p) =>
+    read p (r, tl)
+    cut u : 1
+    call free_rook u r
+    read u ()
+    call free_list d tl
+  }
+
+proc dup_list (d : list * list) (rs : list) =
+  read rs {
+  | 'nil(u) =>
+    cut rs1 : list
+      write rs1 'nil(u)
+    cut rs2 : list
+      cut u_ : 1
+      write u_ ()
+      write rs2 'nil(u_)
+    write d (rs1, rs2)
+  | 'cons(p) =>
+    read p (r, tl)
+    cut r12 : rook * rook
+    call dup_rook r12 r
+    read r12 (r1, r2)
+    cut tl12 : list * list
+    call dup_list tl12 tl
+    read tl12 (tl1, tl2)
+    cut p1 : rook * list
+    write p1 (r1, tl1)
+    cut rs1 : list
+    write rs1 'cons(p1)
+    cut p2 : rook * list
+    write p2 (r2, tl2)
+    cut rs2 : list
+    write rs2 'cons(p2)
+    write d (rs1, rs2)
+  }
+
+proc eq_nat (d : bool) (a : nat) (b : nat) =
+  read a {
+  | 'zero(u) =>
+    read u ()
+    read b {
+    | 'zero(u) =>
+      write d 't(u)
+    | 'succ(y) =>
+      cut u_ : 1
+      call free_nat u_ y
+      write d 'f(u_)
+    }
+  | 'succ(x) =>
+    read b {
+    | 'zero(u) =>
+      read u ()
+      cut u_ : 1
+      call free_nat u_ x
+      write d 'f(u_)
+    | 'succ(y) =>
+      call eq_nat d x y
+    }
+  }
+
+proc conflict (d : bool) (r1 : rook) (r2 : rook) =
+  read r1 (x1, y1)
+  read r2 (x2, y2)
+  cut xx : bool
+  call eq_nat xx x1 x2
+  cut yy : bool
+  call eq_nat yy y1 y2
+  call or d xx yy
+
+proc conflict_any (d : bool) (r : rook) (rs : list) =
+  read rs {
+  | 'nil(u) =>
+    read u ()
+    cut u_ : 1
+    call free_rook u_ r
+    write d 'f(u_)
+  | 'cons(p) =>
+    read p (r1, rs)
+    cut p_ : rook * rook
+    call dup_rook p_ r
+    read p_ (r, r$)
+    cut b : bool
+    call conflict b r$ r1
+    cut c : bool
+    call conflict_any c r rs
+    call or d b c
+  }
+
+proc conflict_pairwise (d : bool) (rs : list) =
+  read rs {
+  | 'nil(u) =>
+    write d 'f(u)
+  | 'cons(p) =>
+    read p (r, rs)
+    cut p_ : list * list
+    call dup_list p_ rs
+    read p_ (rs, rs$)
+    cut b : bool
+    call conflict_any b r rs$
+    cut c : bool
+    call conflict_pairwise c rs
+    call or d b c
+  }
+
+proc n0 (d : nat) =
+  cut u : 1
+  write u ()
+  write d 'zero(u)
+
+proc n1 (d : nat) =
+  cut n : nat
+  call n0 n
+  write d 'succ(n)
+
+proc n2 (d : nat) =
+  cut n : nat
+  call n1 n
+  write d 'succ(n)
+
+proc n3 (d : nat) =
+  cut n : nat
+  call n2 n
+  write d 'succ(n)
+
+proc rooks1 (d : list) =
+  cut rs0 : list
+    cut u : 1
+    write u ()
+    write rs0 'nil(u)
+  id d rs0
+
+proc test1 (d : bool) =
+  cut rs : list
+  call rooks1 rs
+  call conflict_pairwise d rs
+
+proc rooks2 (d : list) =
+  cut rs0 : list
+    cut u : 1
+    write u ()
+    write rs0 'nil(u)
+  cut rs1 : list
+    cut x : nat
+    call n0 x
+    cut y : nat
+    call n0 y
+    cut r : rook
+    write r (x, y)
+    cut p : rook * list
+    write p (r, rs0)
+    write rs1 'cons(p)
+  cut rs2 : list
+    cut x : nat
+    call n1 x
+    cut y : nat
+    call n2 y
+    cut r : rook
+    write r (x, y)
+    cut p : rook * list
+    write p (r, rs1)
+    write rs2 'cons(p)
+  cut rs3 : list
+    cut x : nat
+    call n2 x
+    cut y : nat
+    call n1 y
+    cut r : rook
+    write r (x, y)
+    cut p : rook * list
+    write p (r, rs2)
+    write rs3 'cons(p)
+  id d rs3
+
+proc test2 (d : bool) =
+  cut rs : list
+  call rooks2 rs
+  call conflict_pairwise d rs
+
+proc rooks3 (d : list) =
+  cut rs0 : list
+    cut u : 1
+    write u ()
+    write rs0 'nil(u)
+  cut rs1 : list
+    cut x : nat
+    call n0 x
+    cut y : nat
+    call n0 y
+    cut r : rook
+    write r (x, y)
+    cut p : rook * list
+    write p (r, rs0)
+    write rs1 'cons(p)
+  cut rs2 : list
+    cut x : nat
+    call n3 x
+    cut y : nat
+    call n0 y
+    cut r : rook
+    write r (x, y)
+    cut p : rook * list
+    write p (r, rs1)
+    write rs2 'cons(p)
+  cut rs3 : list
+    cut x : nat
+    call n2 x
+    cut y : nat
+    call n1 y
+    cut r : rook
+    write r (x, y)
+    cut p : rook * list
+    write p (r, rs2)
+    write rs3 'cons(p)
+  id d rs3
+
+proc test3 (d : bool) =
+  cut rs : list
+  call rooks3 rs
+  call conflict_pairwise d rs

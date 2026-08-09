@@ -1,0 +1,50 @@
+/* Test scope for bound variables. */
+
+fail proc scope_test (d : 1) =
+  cut x : 1
+    cut y : 1 * 1
+      cut u : 1
+        write u ()
+      cut w : 1
+        write w ()
+      write y (u, w)
+    read y (y1, y2)
+    /* We don't use y1 or y2 when they're in scope */
+    write x ()
+  /* y1 and y2 are out of scope. */
+  read y1 ()
+  read y2 ()
+  id d x
+
+proc scope_test (d : 1) =
+  cut x : 1
+    cut y : 1 * 1
+      cut u : 1
+        write u ()
+      cut w : 1
+        write w ()
+      write y (u, w)
+    read y (y1, y2)
+    /* We read y1 and y2 while they're in scope */
+    read y1 ()
+    read y2 ()
+    write x ()
+  id d x
+
+fail proc scope_test (d : 1) =
+  cut x : 1
+    cut y : 1 * 1
+      cut u : 1
+        write u ()
+      cut w : 1
+        write w ()
+      write y (u, w)
+    read y (y1, y2)
+    /* We read y1 and y2 while they're in scope */
+    read y1 ()
+    read y2 ()
+    write x ()
+  /* This fails because y1 and y2 are out of scope */
+  read y1 ()
+  read y2 ()
+  id d x

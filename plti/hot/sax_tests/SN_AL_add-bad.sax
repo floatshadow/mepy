@@ -1,0 +1,10 @@
+type nat = +{'zero : 1, 'succ : nat}
+
+fail proc add (d : nat) (x : nat) (y : nat) =
+  read x {
+  | 'zero(u) => read u ()
+                id d y
+  | 'succ(u) => cut r : nat
+                  call add d u y
+                write d 'succ(r)
+  }

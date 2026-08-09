@@ -1,0 +1,91 @@
+/* This file contains basic utilities for natural numbers and will be utilized in other tests. */
+
+type nat = +{ 'zero : 1 , 'succ : nat }
+
+proc zero (d : nat) =
+  cut u : 1
+    write u ()
+  write d 'zero(u)
+
+proc one (d : nat) =
+  cut dzero : nat
+    call zero dzero
+  write d 'succ(dzero)
+
+
+/* First, a failed attempt to implement dup */
+fail
+proc dup_nat (d : nat * nat) (a : nat) =
+  read a
+  {
+  | 'zero(u) =>
+    cut dzero1 : nat
+      call zero dzero1
+    cut dzero2 : nat
+      call zero dzero2
+    write d (dzero1, dzero2)
+  | 'succ(ar) =>
+    cut dr : nat * nat
+      call dup_nat dr ar
+    read dr (ar1, ar1)
+    cut a1 : nat
+      write a1 'succ(ar1)
+    cut a2 : nat
+      write a2 'succ(ar1)
+    write d (a1, a2)
+  }
+
+proc destroy_nat (d : 1) (a : nat) =
+  read a
+  {
+  | 'zero(u) =>
+    id d u
+  | 'succ(ar) =>
+    call destroy_nat d ar
+  }
+
+
+proc dup_nat (d : nat * nat) (a : nat) =
+  read a
+  {
+  | 'zero(u) =>
+    read u ()
+    cut dzero1 : nat
+      call zero dzero1
+    cut dzero2 : nat
+      call zero dzero2
+    write d (dzero1, dzero2)
+  | 'succ(ar) =>
+    cut dr : nat * nat
+      call dup_nat dr ar
+    read dr (ar1, ar2)
+    cut a1 : nat
+      write a1 'succ(ar1)
+    cut a2 : nat
+      write a2 'succ(ar2)
+    write d (a1, a2)
+  }
+
+proc plus_nat (d : nat) (a : nat) (b : nat) =
+  read a
+  {
+  | 'zero(u) => 
+    read u ()
+    id d b
+  | 'succ(ar) => 
+    cut dr : nat
+      call plus_nat dr ar b
+    write d 'succ(dr)
+  }
+
+/*
+proc times_nat (d : nat) (a : nat) (b : nat)
+  read a
+  {
+  | 'zero(u)
+    cut uu : 1
+      call destroy_nat uu b
+    read uu ()
+    write d 'zero(u)
+  }
+*/

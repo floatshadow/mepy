@@ -1,0 +1,102 @@
+type nat = +{'zero : 1, 'succ : nat}
+type enn = +{'zero : 1, 'succ : nat, 'inf : 1}
+type bool = +{'t : 1, 'f : 1}
+
+proc free (d : 1) (a : enn) =
+  read a {
+  | 'zero(u) =>
+    id d u
+  | 'succ(x) =>
+    call free d x
+  | 'inf(u) =>
+    id d u
+  }
+
+proc le (d : bool) (a : enn) (b : enn) =
+  read a {
+  | 'zero(u) =>
+    read u ()
+    cut u_ : 1
+    call free u_ b
+    write d 't(u_)
+  | 'succ(x) =>
+    read b {
+    | 'zero(u) =>
+      read u ()
+      cut u__ : 1
+      call free u__ x
+      write d 'f(u__)
+    | 'succ(y) =>
+      call le d x y
+    | 'inf(u) =>
+      read u ()
+      cut u___ : 1
+      call free u___ x
+      write d 't(u___)
+    }
+  | 'inf(u) =>
+    read u ()
+    read b {
+    | 'zero(u) =>
+      write d 'f(u)
+    | 'succ(y) =>
+      cut u____ : 1
+      call free u____ y
+      write d 'f(u____)
+    | 'inf(u) =>
+      write d 't(u)
+    }
+  }
+
+proc n0 (d : nat) =
+  cut u : 1
+  write u ()
+  write d 'zero(u)
+
+proc n1 (d : nat) =
+  cut n : nat
+  call n0 n
+  write d 'succ(n)
+
+proc n2 (d : nat) =
+  cut n : nat
+  call n1 n
+  write d 'succ(n)
+
+proc n3 (d : nat) =
+  cut n : nat
+  call n2 n
+  write d 'succ(n)
+
+proc inf (d : enn) =
+  cut u : 1
+  write u ()
+  write d 'inf(u)
+
+proc le_zero_two (d : bool) =
+  cut a : nat
+  call n0 a
+  cut b : nat
+  call n2 b
+  call le d a b
+
+proc le_zero_inf (d : bool) =
+  cut a : nat
+  call n0 a
+  cut b : enn
+  call inf b
+  call le d a b
+
+proc le_inf_two (d : bool) =
+  cut a : enn
+  call inf a
+  cut b : nat
+  call n2 b
+  call le d a b
+
+proc le_inf_inf (d : bool) =
+  cut a : enn
+  call inf a
+  cut b : enn
+  call inf b
+  call le d a b

@@ -1,0 +1,35 @@
+type nat = +{'zero : 1, 'succ : nat}
+
+fail proc plus (d : nat) (b : nat) (b : nat) = 
+    read a {
+        | 'zero(a) => 
+                read a () 
+                id d b
+        | 'succ(a) =>
+            cut d2 : nat
+                call plus d2 a b
+            write d 'succ(d2)
+    }
+
+fail proc plus (d : nat) (d : nat) (b : nat) = 
+    read a {
+        | 'zero(a) => 
+                read a () 
+                id d b
+        | 'succ(a) =>
+            cut d2 : nat
+                call plus d2 a b
+            write d 'succ(d2)
+    }
+
+
+fail proc plus (d : nat) (d : nat) (d : nat) = 
+    read a {
+        | 'zero(a) => 
+                read a () 
+                id d b
+        | 'succ(a) =>
+            cut d2 : nat
+                call plus d2 a b
+            write d 'succ(d2)
+    }

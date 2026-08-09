@@ -1,0 +1,12 @@
+type nat = +{ 'zero: 1, 'suc: nat }
+type bool = +{ 'false: 1, 'true: 1 }
+
+proc const_zero (out : nat) =
+    cut unit : 1
+        write unit ()
+    write out 'zero(unit)
+
+proc const_one (out : nat) =
+    cut zero : nat
+        call const_zero zero
+    write out 'suc(zero)

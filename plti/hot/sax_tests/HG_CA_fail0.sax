@@ -1,0 +1,4 @@
+type nat = +{'zero : 1, 'succ : nat}
+
+fail proc zero (d : nat) =
+    write d ()

@@ -1,0 +1,134 @@
+type nat = +{'zero : 1, 'succ : nat}
+type bool = +{'true : 1, 'false : 1}
+
+proc dealloc_nat (d : 1) (x : nat) =
+     read x {
+     | 'zero(u) => id d u
+     | 'succ (n) => call dealloc_nat d n
+     }
+
+
+proc duplicate_nat (d : nat*nat) (x : nat) =
+     read x {
+     | 'zero(u) => cut v : 1
+                     write v ()
+		   cut fst : nat
+		     write fst 'zero(u)
+		   cut snd : nat
+		     write snd 'zero(v)
+		   write d (fst, snd)
+     | 'succ(u) => cut duped : nat*nat
+                     call duplicate_nat duped u
+		   read duped{
+		   | (fst, snd) =>
+		   cut nfst : nat
+		     write nfst 'succ(fst)
+		   cut nsnd : nat
+		     write nsnd 'succ(snd)
+		   write d (nfst, nsnd)
+		   }
+     }
+
+proc equal_nat (d : bool) (x : nat) (y : nat) =
+     read x {
+     | 'zero(u) => read y {
+                          | 'zero(v) => read u { | () => write d 'true(v)}
+			  | 'succ(n) => read u { | () => cut z : 1
+			                                   call dealloc_nat z n
+						       write d 'false(z)}
+	           }
+     | 'succ(u) => read y {
+                   | 'zero(v) => read v{ | () => cut z : 1
+		                                 call dealloc_nat z u
+					       write d 'false(z)
+				       }
+		   | 'succ(v) => call equal_nat d u v
+                   }
+     }
+
+
+proc subtraction (d : nat) (x : nat) (y : nat) =
+read x {
+| 'zero(u) => read u {|()=> cut z : 1
+                              call dealloc_nat z y
+			    write d 'zero(z)}
+| 'succ(n) => read y {
+              | 'zero(u) => read u {|()=> write d 'succ(n)}
+	      | 'succ(m) => call subtraction d n m
+              }
+}
+
+proc mod (d : nat) (x : nat) (y : nat) =
+read x {
+| 'zero(u) => read u {|()=> cut z : 1
+                              call dealloc_nat z y
+			    write d 'zero(z)}
+| 'succ(n) => cut back : nat
+                write back 'succ(n)
+              cut xdupes : nat*nat
+	        call duplicate_nat xdupes back
+	      read xdupes {
+	      | (x1, x2) =>
+	      cut ydupes : nat*nat
+	        call duplicate_nat ydupes y
+	      read ydupes {
+	      | (y1, y2) => cut sub : nat
+	                      call subtraction sub x1 y1
+			    cut ydupagain : nat*nat
+			      call duplicate_nat ydupagain y2
+			    read ydupagain {
+			    | (y1, y2) =>
+			    cut r : nat
+			      call mod r sub y1
+			    read r {
+			    | 'zero(u) => read u{|()=>
+			                  cut dupxagain : nat*nat
+					    call duplicate_nat dupxagain x2
+					  read dupxagain {
+					  | (x1, x2) =>
+					  cut z : bool
+					    call equal_nat z x1 y2
+					    read z {
+					    | 'true(u) => cut z_ : 1
+					                    call dealloc_nat z_ x2
+							  read z_ {|()=> write d 'zero(u)}
+					    | 'false(u) => read u {|()=> id d x2}
+					    }
+					  }
+			                  }
+			    | 'succ(n) => cut z : 1
+			                    call dealloc_nat z x2
+					  cut q : 1
+					    call dealloc_nat q y2
+					  read z {|()=> read q {|()=> write d 'succ(n)}}
+			    }
+			    }
+	      }
+	      }
+}
+
+proc zero (d : nat) = cut z : 1
+                        write z ()
+	              write d 'zero(z)
+
+proc one (d : nat) = cut z : nat
+                       call zero z
+		     write d 'succ(z)
+
+proc two (d : nat) = cut z : nat
+                       call one z
+		     write d 'succ(z)
+
+proc three (d : nat) = cut z : nat
+                       call two z
+		     write d 'succ(z)
+
+proc four (d : nat) = cut z : nat
+                       call three z
+		     write d 'succ(z)
+
+proc fourmodthree(d : nat) = cut f : nat
+                               call four f
+			     cut t : nat
+			       call three t
+			     call mod d f t

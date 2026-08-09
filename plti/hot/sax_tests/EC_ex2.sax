@@ -1,0 +1,201 @@
+type bool = +{'true: 1, 'false: 1}
+type bin = +{'b0: bin, 'b1: bin, 'e: 1}
+type tree = +{'leaf: bin, 'node: tree * tree}
+
+proc zero (d: bin) = 
+    cut z : 1 
+        write z ()
+    write d 'e(z)
+
+proc one (d: bin) = 
+    cut x : bin 
+        call zero x 
+    write d 'b1(x) 
+
+proc two (d: bin) = 
+    cut x : bin 
+        call one x 
+    write d 'b0(x)
+
+proc three (d: bin) = 
+    cut x : bin 
+        call two x 
+    write d 'b1(x)
+
+proc leaf (d: tree) (v: bin) = 
+    write d 'leaf(v)
+
+proc node (d: tree) (v1: tree) (v2: tree) = 
+    cut h : (tree * tree) 
+        write h (v1, v2) 
+    write d 'node (h)
+
+proc simple_tree (d: tree) = 
+    cut x1 : bin 
+        call one x1 
+    cut x2 : bin 
+        call two x2 
+    cut l1 : tree 
+        call leaf l1 x1
+    cut l2 : tree 
+        call leaf l2 x2
+    cut n : tree * tree
+        write n (l1, l2)
+    write d 'node(n)
+
+proc dealloc_bin (d: 1) (x: bin) = 
+    read x {
+        | 'b0(x0) => call dealloc_bin d x0
+        | 'b1(x1) => call dealloc_bin d x1 
+        | 'e(u) => id d u 
+    }
+
+proc equals (d1: bool) (x: bin) (y: bin) = 
+    cut u : 1 
+        write u () 
+    read x {
+        | 'b0(x0) => 
+        read y {
+            | 'b1(y1) => 
+                cut d2 : 1 
+                    call dealloc_bin d2 x0 
+                read d2 () 
+
+                cut d3 : 1 
+                    call dealloc_bin d3 y1 
+                read d3 () 
+
+                write d1 'false(u)
+            | 'e (u2) => 
+                cut d2 : 1 
+                    call dealloc_bin d2 x0 
+                read d2 () 
+
+                read u2 ()
+
+                write d1 'false(u)
+            | 'b0(y0) => 
+                read u () 
+                call equals d1 x0 y0 
+        }
+        | 'b1(x1) => 
+            read y {
+                | 'b1(y1) => 
+                    read u () 
+                    call equals d1 x1 y1 
+                | 'b0(y0) => 
+                    cut d2 : 1 
+                        call dealloc_bin d2 x1 
+                    read d2 () 
+
+                    cut d3 : 1 
+                        call dealloc_bin d3 y0 
+                    read d3 () 
+                    write d1 'false(u) 
+                | 'e(u2) => 
+                    cut d2 : 1 
+                        call dealloc_bin d2 x1 
+                    read d2 () 
+                    read u2 () 
+                    write d1 'false(u)
+            }
+        | 'e(u2) => 
+            read u2 () 
+            read y {
+                | 'e(u3) => 
+                    read u3 ()
+                    write d1 'true(u)
+                | 'b1(y1) => 
+                    cut d2 : 1 
+                        call dealloc_bin d2 y1 
+                    read d2 () 
+
+                    write d1 'false(u) 
+                | 'b0(y0) => 
+                    cut d2 : 1 
+                        call dealloc_bin d2 y0 
+                    read d2 () 
+
+                    write d1 'false(u) 
+            }
+    }
+
+proc dup_bin (d : bin * bin) (x : bin) =
+  read x {
+  | 'b0(x) => cut y : bin * bin
+                 call dup_bin y x
+              read y (y1, y2)
+              cut d1 : bin
+                write d1 'b0(y1)
+              cut d2 : bin
+                write d2 'b0(y2)
+              write d (d1, d2)
+  | 'b1(x) => cut y : bin * bin
+                 call dup_bin y x
+              read y (y1, y2)
+              cut d1 : bin
+                write d1 'b1(y1)
+              cut d2 : bin
+                write d2 'b1(y2)
+              write d (d1, d2)
+  | 'e(u) => cut d1 : bin
+                write d1 'e(u)
+             cut d2 : bin
+                cut w : 1
+                   write w ()
+                write d2 'e(w)
+             write d (d1, d2)
+  }
+
+proc conjunction (d: bool) (a: bool) (b: bool) = 
+    read a {
+        | 'true (u) => 
+            read b {
+                | 'true (u2) => read u2 ()
+                                write d 'true(u)
+                | 'false (u2) => read u2 ()
+                                write d 'true(u)
+            }
+        | 'false (u) => 
+            read b {
+                | 'true (u2) => read u2 ()
+                                write d 'true(u)
+                | 'false (u2) => read u2 ()
+                                write d 'false(u)
+            }
+    }
+
+proc destructive_search (d: bool) (t: tree) (v: bin) = 
+    read t { 
+        | 'leaf (b) => 
+            cut eq : bool 
+                call equals eq b v
+            read eq {
+                | 'true (u) => write d 'true (u) 
+                | 'false (u) => write d 'false (u) 
+            }
+        | 'node (b) => 
+            read b (l, r) 
+            cut vs : (bin * bin)
+                call dup_bin vs v 
+            read vs (v1, v2) 
+            cut dl : bool 
+                call destructive_search dl l v1
+            cut dr : bool 
+                call destructive_search dr r v2 
+            call conjunction d dl dr 
+    }
+
+proc test_true (d: bool) = 
+    cut t : tree 
+        call simple_tree t 
+    cut x : bin 
+        call two x 
+    call destructive_search d t x
+
+proc test_false (d: bool) = 
+    cut t : tree 
+        call simple_tree t 
+    cut x : bin 
+        call three x 
+    call destructive_search d t x

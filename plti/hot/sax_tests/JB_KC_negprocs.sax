@@ -1,0 +1,19 @@
+type nat = +{'zero : 1, 'succ : nat}
+type list = +{'nil : 1, 'cons : nat * list}
+
+proc one (d : 1) = write d ()
+
+proc zero (d : nat) = cut u : 1
+                        call one u
+                     write d 'zero(u)
+
+fail proc two (d : nat) = call three d
+
+fail proc one (d : nat) =
+ cut u : 1
+   call one u
+ cut z : nat
+   write z 'zero(u)
+ write n 'succ(z)
+
+

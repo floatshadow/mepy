@@ -1,0 +1,3 @@
+type nested = +{'nil : 1, 'inner: +{'testing : 1, 'tester : nested, 'zero : 1}, 'times : nested*nested}
+fail type nesting = +{'nil : 1, 'inside: +{'testing : 1, 'nil : nesting, 'tester : 1}}
+type finiteproducts = nested*nested*nested*nested*nested*nested

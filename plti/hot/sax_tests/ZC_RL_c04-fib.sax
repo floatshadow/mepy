@@ -1,0 +1,346 @@
+
+type nat = +{'zero : 1, 'succ : nat}
+
+type seq = +{'nil : 1, 'cons : nat * seq}
+
+proc plus (d : nat) (a : nat) (b : nat) = 
+    read a {
+        | 'zero(a) => 
+                read a () 
+                id d b
+        | 'succ(a) =>
+            cut d2 : nat
+                call plus d2 a b
+            write d 'succ(d2)
+    }
+
+
+
+proc nat_duplicate (d : nat * nat) (a : nat) =
+    read a {
+        | 'zero(a) => 
+            cut d1 : nat
+                cut u1 : 1
+                    write u1 ()
+                write d1 'zero(u1)
+            cut d2 : nat
+                write d2 'zero(a)
+            write d (d1, d2)
+        | 'succ(a) =>
+            cut dt : nat * nat 
+                call nat_duplicate dt a
+            read dt (dt1, dt2)
+            cut d1 : nat
+                write d1 'succ(dt1)
+            cut d2 : nat
+                write d2 'succ(dt2)
+            write d (d1, d2)
+    }
+
+proc nat_dealloc (d : 1) (n : nat) = 
+    read n {
+        | 'zero(n) => id d n
+        | 'succ(n) => call nat_dealloc d n
+    }
+
+proc fib (d : seq) (l : nat) (p1 : nat) (p2 : nat) =
+    read l {
+        | 'zero(u) =>
+            cut u1 : 1
+                call nat_dealloc u1 p1
+            read u1 ()
+            cut u2 : 1
+                call nat_dealloc u2 p2
+            read u2 ()
+            write d 'nil(u)
+        | 'succ(l) => 
+            cut p2p2 : nat * nat
+                call nat_duplicate p2p2 p2
+            read p2p2 (p2_1, p2_2)
+            cut d1 : nat
+                call plus d1 p1 p2_1
+            cut d1d1 : nat * nat
+                call nat_duplicate d1d1 d1
+            read d1d1 (d1_1, d1_2)
+            cut d2 : seq
+                call fib d2 l p2_2 d1_1
+            cut elem : nat * seq
+                write elem (d1_2, d2)
+            write d 'cons(elem)
+    }
+
+
+
+proc zero (d : nat) =
+    cut u : 1
+        write u ()
+    write d 'zero(u)
+
+proc one (d : nat) = 
+    cut u : 1
+        write u ()
+    cut d0 : nat
+        write d0 'zero(u)
+    write d 'succ(d0)
+
+proc twelve (d : nat) = 
+    cut u : 1
+        write u ()
+    cut d0 : nat
+        write d0 'zero(u)
+    cut d1 : nat
+        write d1 'succ(d0)
+    cut d2 : nat
+        write d2 'succ(d1)
+    cut d3 : nat
+        write d3 'succ(d2)
+    cut d4 : nat
+        write d4 'succ(d3)
+    cut d5 : nat
+        write d5 'succ(d4)
+    cut d6 : nat
+        write d6 'succ(d5)
+    cut d7 : nat
+        write d7 'succ(d6)
+    cut d8 : nat
+        write d8 'succ(d7)
+    cut d9 : nat
+        write d9 'succ(d8)
+    cut d10 : nat
+        write d10 'succ(d9)
+    cut d11 : nat
+        write d11 'succ(d10)
+    write d 'succ(d11)
+
+
+proc fib_12 (d : seq) = 
+    cut n0 : nat
+        call zero n0
+    cut n1 : nat
+        call one n1
+    cut n12 : nat
+        call twelve n12
+    call fib d n12 n0 n1
+    
+
+type nat_display = +{'0 : nat_display, '1 : nat_display, '2 : nat_display, '3 : nat_display, '4 : nat_display, '5 : nat_display, '6 : nat_display, '7 : nat_display, '8 : nat_display, '9 : nat_display, 'end : 1}
+
+type seq_display = +{'nil : 1, 'cons : nat_display * seq_display}
+
+proc increment_nat_display (d : nat_display) (input : nat_display) = 
+    read input {
+        | '0(input) => write d '1(input)
+        | '1(input) => write d '2(input)
+        | '2(input) => write d '3(input)
+        | '3(input) => write d '4(input)
+        | '4(input) => write d '5(input)
+        | '5(input) => write d '6(input)
+        | '6(input) => write d '7(input)
+        | '7(input) => write d '8(input)
+        | '8(input) => write d '9(input)
+        | '9(input) => cut d2 : nat_display
+                        call increment_nat_display d2 input
+                        write d '0(d2)
+        | 'end(u) => cut d2 : nat_display
+                        write d2 'end(u)
+                    write d '1(d2)
+    }
+
+proc display_nat_no_reverse (d : nat_display) (n : nat) = 
+    read n {
+        | 'zero(n) => write d 'end(n)
+        | 'succ(n) => 
+            cut d2 : nat_display
+                call display_nat_no_reverse d2 n
+            call increment_nat_display d d2
+    }
+
+proc reverse_nat_display (d : nat_display) (input : nat_display) (pending : nat_display) = 
+    read input {
+        | '0(input) => cut pending2 : nat_display
+                        write pending2 '0(pending)
+                        call reverse_nat_display d input pending2
+        | '1(input) => cut pending2 : nat_display
+                        write pending2 '1(pending)
+                        call reverse_nat_display d input pending2
+        | '2(input) => cut pending2 : nat_display
+                        write pending2 '2(pending)
+                        call reverse_nat_display d input pending2
+        | '3(input) => cut pending2 : nat_display
+                        write pending2 '3(pending)
+                        call reverse_nat_display d input pending2
+        | '4(input) => cut pending2 : nat_display
+                        write pending2 '4(pending)
+                        call reverse_nat_display d input pending2
+        | '5(input) => cut pending2 : nat_display
+                        write pending2 '5(pending)
+                        call reverse_nat_display d input pending2
+        | '6(input) => cut pending2 : nat_display
+                        write pending2 '6(pending)
+                        call reverse_nat_display d input pending2
+        | '7(input) => cut pending2 : nat_display
+                        write pending2 '7(pending)
+                        call reverse_nat_display d input pending2
+        | '8(input) => cut pending2 : nat_display
+                        write pending2 '8(pending)
+                        call reverse_nat_display d input pending2
+        | '9(input) => cut pending2 : nat_display
+                        write pending2 '9(pending)
+                        call reverse_nat_display d input pending2
+        | 'end(u) => read u () id d pending
+    }
+
+proc display_nat (d : nat_display) (n : nat) = 
+    cut d2 : nat_display
+        call display_nat_no_reverse d2 n
+    cut d3 : nat_display
+        cut u : 1
+            write u ()
+        write d3 'end(u)
+    call reverse_nat_display d d2 d3
+
+
+proc display_seq_no_reverse_nat (d : seq_display) (s : seq) =
+    read s {
+        | 'nil(u) => write d 'nil(u)
+        | 'cons(elem) => 
+            read elem (n, s2)
+            cut d2 : nat_display
+                call display_nat_no_reverse d2 n
+            cut d3 : seq_display
+                call display_seq_no_reverse_nat d3 s2
+            cut d2d3 : nat_display * seq_display
+                write d2d3 (d2, d3)
+            write d 'cons(d2d3)
+    }
+
+proc display_seq (d : seq_display) (s : seq) =
+    read s {
+        | 'nil(u) => write d 'nil(u)
+        | 'cons(elem) => 
+            read elem (n, s2)
+            cut d2 : nat_display
+                call display_nat d2 n
+            cut d3 : seq_display
+                call display_seq d3 s2
+            cut d2d3 : nat_display * seq_display
+                write d2d3 (d2, d3)
+            write d 'cons(d2d3)
+    }
+
+proc fib_12_display_no_reverse (d : seq_display) =
+    cut s : seq
+        call fib_12 s
+    call display_seq_no_reverse_nat d s
+
+proc fib_12_display (d : seq_display) =
+    cut s : seq
+        call fib_12 s
+    call display_seq d s
+
+fail proc fib_12 (d : seq) = 
+    cut n0 : nat
+        call zero n0
+    cut n1 : nat
+        call one n1
+    cut n12 : nat
+        call twelve n12
+    call fib d1 n12 n0 n1
+
+
+fail proc fib (d : seq) (l : nat) (p1 : nat) (p2 : nat) =
+    read l {
+        | 'zero(u) =>
+            cut u1 : 1
+                call nat_dealloc u1 p2
+            read u1 ()
+            cut u2 : 1
+                call nat_dealloc u2 p2
+            read u2 ()
+            write d 'nil(u)
+        | 'succ(l) => 
+            cut p2p2 : nat * nat
+                call nat_duplicate p2p2 p2
+            read p2p2 (p2_1, p2_2)
+            cut d1 : nat
+                call plus d1 p1 p2_1
+            cut d1d1 : nat * nat
+                call nat_duplicate d1d1 d1
+            read d1d1 (d1_1, d1_2)
+            cut d2 : seq
+                call fib d2 l p2_2 d1_1
+            cut elem : nat * seq
+                write elem (d1_2, d2)
+            write d 'cons(elem)
+    }
+
+
+// unit_tests/fib.sax:47.13-48.36:error:variable d1 used more than once
+fail proc fib (d : seq) (l : nat) (p1 : nat) (p2 : nat) =
+    read l {
+        | 'zero(u) =>
+            write d 'nil(u)
+        | 'succ(l) => 
+            cut d1 : nat
+                call plus d1 p1 p2
+            cut d2 : seq
+                call fib d2 l p2 d1
+            cut elem : nat * seq
+                write elem (d1, d2)
+            write d 'cons(elem)
+    }
+
+
+
+fail proc fib (d : seq) (l : nat) (p1 : nat) (p2 : nat) =
+    read l {
+        | 'zero(u) =>
+            write d 'nil(u)
+        | 'succ(l) => 
+            cut p2p2 : nat * nat
+                call nat_duplicate p2p2 p2
+            read p2p2 (p2_1, p2_2)
+            cut d1 : nat
+                call plus d1 p1 p2_1
+            cut d1d1 : nat * nat
+                call nat_duplicate d1d1 d1
+            read d1d1 (d1_1, d1_2)
+            cut d2 : seq
+                call fib d2 l p2_2 d1_1
+            cut elem : nat * seq
+                write elem (d1_2, d2)
+            write d 'cons(elem)
+    }
+
+
+
+// unit_tests/fib.sax:47.13-48.36:error:variable d1 used more than once
+fail proc fib (d : seq) (l : nat) (p1 : nat) (p2 : nat) =
+    read l {
+        | 'zero(u) =>
+            write d 'nil(u)
+        | 'succ(l) => 
+            cut d1 : nat
+                call plus d1 p1 p2
+            cut d2 : seq
+                call fib d2 l p2 d1
+            cut elem : nat * seq
+                write elem (d1, d2)
+            write d 'cons(elem)
+    }
+
+fail proc display_nat (d : nat_display) (n : nat) = 
+    read n {
+        | 'zero(n) => write d 'end(n)
+        | 'succ(n) => 
+            cut d2 : nat_display
+                call display_nat d2 n
+            cut d3 : nat_display
+                call increment_nat_display d d2
+            cut d4 : nat_display
+                cut u : 1
+                    write u ()
+                write d4 'end(u)
+            call reverse_nat_display d d3 d4
+
+    }

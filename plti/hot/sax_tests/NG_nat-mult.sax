@@ -1,0 +1,144 @@
+/* BEGIN: nat.sax import */
+
+type nat = +{ 'zero : 1 , 'succ : nat }
+
+proc zero (d : nat) =
+  cut u : 1
+    write u ()
+  write d 'zero(u)
+
+proc one (d : nat) =
+  cut dzero : nat
+    call zero dzero
+  write d 'succ(dzero)
+
+
+/* First, a failed attempt to implement dup */
+fail
+proc dup_nat (d : nat * nat) (a : nat) =
+  read a
+  {
+  | 'zero(u) =>
+    cut dzero1 : nat
+      call zero dzero1
+    cut dzero2 : nat
+      call zero dzero2
+    write d (dzero1, dzero2)
+  | 'succ(ar) =>
+    cut dr : nat * nat
+      call dup_nat dr ar
+    read dr (ar1, ar1)
+    cut a1 : nat
+      write a1 'succ(ar1)
+    cut a2 : nat
+      write a2 'succ(ar1)
+    write d (a1, a2)
+  }
+
+proc destroy_nat (d : 1) (a : nat) =
+  read a
+  {
+  | 'zero(u) =>
+    id d u
+  | 'succ(ar) =>
+    call destroy_nat d ar
+  }
+
+
+proc dup_nat (d : nat * nat) (a : nat) =
+  read a
+  {
+  | 'zero(u) =>
+    read u ()
+    cut dzero1 : nat
+      call zero dzero1
+    cut dzero2 : nat
+      call zero dzero2
+    write d (dzero1, dzero2)
+  | 'succ(ar) =>
+    cut dr : nat * nat
+      call dup_nat dr ar
+    read dr (ar1, ar2)
+    cut a1 : nat
+      write a1 'succ(ar1)
+    cut a2 : nat
+      write a2 'succ(ar2)
+    write d (a1, a2)
+  }
+
+proc plus_nat (d : nat) (a : nat) (b : nat) =
+  read a
+  {
+  | 'zero(u) => 
+    read u ()
+    id d b
+  | 'succ(ar) => 
+    cut dr : nat
+      call plus_nat dr ar b
+    write d 'succ(dr)
+  }
+
+/* END: nat.sax import */
+
+proc two (d : nat) =
+  cut d_one : nat
+    call one d_one
+  cut d_ones : nat * nat
+    call dup_nat d_ones d_one
+  read d_ones (one1, one2)
+  call plus_nat d one1 one2
+
+
+proc times_nat (d : nat) (a : nat) (b : nat) =
+  read a
+  {
+  | 'zero(u) =>
+    cut uu : 1
+      call destroy_nat uu b
+    read uu ()
+    write d 'zero(u)
+  | 'succ(ar) =>
+    cut bb : nat * nat
+      call dup_nat bb b
+    read bb (b1, b2)
+    cut dr : nat
+      call times_nat dr ar b2
+    call plus_nat d b1 dr
+  }
+
+
+proc exp_nat (d : nat) (a : nat) (b : nat) =
+  read a
+  {
+  | 'zero(u) =>
+    cut uu : 1
+      call destroy_nat uu b
+    read uu ()
+    read u ()
+    call one d
+  | 'succ(ar) =>
+    cut bb : nat * nat
+      call dup_nat bb b
+    read bb (b1, b2)
+    cut dr : nat
+      call exp_nat dr ar b2
+    call times_nat d b1 dr
+  }
+
+
+proc four (d : nat) =
+  cut d_two : nat
+    call two d_two
+  cut d_twos : nat * nat
+    call dup_nat d_twos d_two
+  read d_twos (two1, two2)
+  call times_nat d two1 two2
+
+
+proc n256 (d : nat) =
+  cut d_four : nat
+    call four d_four
+  cut d_fours : nat * nat
+    call dup_nat d_fours d_four
+  read d_fours (four1, four2)
+  call exp_nat d four1 four2

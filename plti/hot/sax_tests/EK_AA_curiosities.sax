@@ -1,0 +1,36 @@
+type a = a * a
+type b = b * b
+
+type void = +{'void : void}
+
+proc in (d : a) (x : a) (y : a) =
+    write d (x, y)
+
+proc inlong (d : a) (x : a) (y : a) =
+    cut xy : a * a
+        write xy (x, y)
+    id d xy
+
+proc out (d : a * a) (x : a) =
+    id d x
+
+proc outlong (d : a * a) (x : a) =
+    read x (a, b)
+    write d (a, b)
+
+proc absurd (d : b) (v : void) =
+    read v {
+    | 'void(v) => call absurd d v
+    }
+
+proc deepid (d : b) (x : a) = id d x
+
+proc absurd2 (d : void) (x : a) =
+    read x (t1, t2)
+    cut b1 : b
+        id b1 t1
+    cut b2 : a * b
+        id b2 t2
+    cut b : (a * a) * ((b * a) * (a * b))
+        write b (b1, b2)
+    call absurd2 d b

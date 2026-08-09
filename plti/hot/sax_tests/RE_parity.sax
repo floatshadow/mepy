@@ -1,0 +1,121 @@
+
+type nat = +{'zero : 1, 'succ : nat}
+type even = +{'zero : 1, 'succ : odd}
+type odd = +{'succ : even}
+
+proc add (d : nat) (a : nat) (b : nat) =
+  read a {
+  | 'zero(u) =>
+    read u ()
+    id d b
+  | 'succ(x) =>
+    cut s : nat
+    call add s x b
+    write d 'succ(s)
+  }
+
+proc add_ee (d : even) (a : even) (b : even) =
+  read a {
+  | 'zero(u) =>
+    read u ()
+    id d b
+  | 'succ(x) =>
+    cut s : odd
+    call add_oe s x b
+    write d 'succ(s)
+  }
+
+// return type is odd but succ(s) is even
+fail proc add_ee_fail (d : odd) (a : even) (b : even) =
+  read a {
+  | 'zero(u) =>
+    read u ()
+    id d b
+  | 'succ(x) =>
+    cut s : odd
+    call add_oe s x b
+    write d 'succ(s)
+  }
+
+proc add_eo (d : odd) (a : even) (b : odd) =
+  read a {
+  | 'zero(u) =>
+    read u ()
+    id d b
+  | 'succ(x) =>
+    cut s : even
+    call add_oo s x b
+    write d 'succ(s)
+  }
+
+// s is odd but return type of add_oo is even
+fail proc add_eo_fail (d : even) (a : even) (b : odd) =
+  read a {
+  | 'zero(u) =>
+    read u ()
+    id d b
+  | 'succ(x) =>
+    cut s : odd
+    call add_oo s x b
+    write d 'succ(s)
+  }
+
+proc add_oe (d : odd) (a : odd) (b : even) =
+  read a 'succ(x)
+  cut s : even
+  call add_ee s x b
+  write d 'succ(s)
+
+// x is even but s is odd
+fail proc add_oe_fail (d : even) (a : odd) (b : even) =
+  read a 'succ(x)
+  cut s : odd
+  call add_oe s x b
+  write d 'succ(s)
+
+proc add_oo (d : even) (a : odd) (b : odd) =
+  read a 'succ(x)
+  cut s : odd
+  call add_eo s x b
+  write d 'succ(s)
+
+// s is nat but d needs to be succ(even)
+fail proc add_oo_fail (d : odd) (a : odd) (b : odd) =
+  read a 'succ(x)
+  cut s : nat
+  call add_eo s x b
+  write d 'succ(s)
+
+proc n0 (d : even) =
+  cut u : 1
+  write u ()
+  write d 'zero(u)
+
+proc n1 (d : odd) =
+  cut n : even
+  call n0 n
+  write d 'succ(n)
+
+proc n2 (d : even) =
+  cut n : odd
+  call n1 n
+  write d 'succ(n)
+
+proc n3 (d : odd) =
+  cut n : even
+  call n2 n
+  write d 'succ(n)
+
+proc add_two_three (d : nat) =
+  cut a : nat
+  call n2 a
+  cut b : nat
+  call n3 b
+  call add d a b
+
+proc add_eo_two_three (d : nat) =
+  cut a : even
+  call n2 a
+  cut b : odd
+  call n3 b
+  call add_eo d a b

@@ -1,0 +1,6 @@
+
+type nat = +{'zero : 1, 'succ : nat}
+
+fail type foo = bla         // undefined type name
+
+fail type baz = nat         // non-contractive type defn

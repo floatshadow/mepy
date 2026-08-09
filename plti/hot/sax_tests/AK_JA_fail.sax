@@ -1,0 +1,11 @@
+type bin = +{'b0 : bin, 'b1 : bin, 'e : 1}
+
+fail
+proc bad (d : bin) =
+  cut u : 1
+    write u ()
+  cut x : bin
+    write x 'e(u)
+  cut y : bin
+    write y 'b1(x)
+  write d 'b1(x)

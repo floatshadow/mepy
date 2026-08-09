@@ -1,0 +1,151 @@
+type nat = +{ 'zero : 1, 'succ : nat }
+
+proc zero (d : nat) =
+  cut u : 1
+    write u ()
+    write d 'zero(u)
+
+proc succ (d : nat) (n : nat) =
+  write d 'succ(n)
+
+proc one (d : nat) =
+  cut z : nat
+    call zero z
+    call succ d z
+
+proc add (d : nat) (a : nat) (b : nat) =
+  read b {
+  | 'zero(u) => read u ()
+                  id d a
+  | 'succ(s) => cut x : nat
+                  call add x a s
+                  call succ d x
+  }
+
+proc two (d : nat) =
+  cut one1 : nat
+    call one one1
+    cut one2 : nat
+      call one one2
+      call add d one1 one2
+
+proc three (d : nat) =
+  cut t : nat
+    call two t
+    call succ d t
+
+proc dealloc_nat (d : 1) (n : nat) =
+  read n {
+  | 'zero(u) => id d u
+  | 'succ(s) => call dealloc_nat d s
+  }
+
+proc dup_nat (d : nat * nat) (n : nat) =
+  read n {
+  | 'zero(u) => cut z1 : nat
+                  write z1 'zero(u)
+                  cut z2 : nat
+                    call zero z2
+                    write d (z1, z2)
+  | 'succ(s) => cut ss : nat * nat
+                  call dup_nat ss s
+                  read ss (s1, s2)
+                    cut d1 : nat
+                      call succ d1 s1
+                      cut d2 : nat
+                        call succ d2 s2
+                        write d (d1, d2)
+  }
+
+proc mul (d : nat) (a : nat) (b : nat) =
+  read b {
+  | 'zero(u) => cut w : 1
+                  call dealloc_nat w a
+                  read w ()
+                    write d 'zero(u)
+  | 'succ(s) => cut as : nat * nat
+                  call dup_nat as a
+                  read as (a1, a2)
+                    cut e : nat
+                      call mul e a1 s
+                      call add d a2 e
+  }
+
+proc four (d : nat) =
+  cut two1 : nat
+    call two two1
+    cut two2 : nat
+      call two two2
+      call mul d two1 two2
+
+proc five (d : nat) =
+  cut two : nat
+    call two two
+    cut three : nat
+      call three three
+      call add d two three
+
+proc six (d : nat) =
+  cut two : nat
+    call two two
+    cut three : nat
+      call three three
+      call mul d two three
+
+proc fib_pair (d : nat * nat) (n : nat) =
+  read n {
+  | 'zero(u) => read u ()
+  		cut z : nat
+                  call zero z
+                  cut o : nat
+                    call one o
+                    write d (z, o)
+  | 'succ(s) => cut prev : nat * nat
+                  call fib_pair prev s
+                  read prev (a, b)
+		    cut dupb : nat * nat
+		      call dup_nat dupb b
+		      read dupb (b1, b2)
+                        cut sum : nat
+                          call add sum a b1
+                          write d (b2, sum)
+  }
+
+proc fib (d : nat) (n : nat) =
+  cut pair : nat * nat
+    call fib_pair pair n
+    read pair (a, b)
+      cut killb : 1
+        call dealloc_nat killb b
+	read killb ()
+          id d a
+
+proc fib1 (d: nat) =
+  cut t : nat
+    call one t
+    call fib d t
+
+proc fib2 (d: nat) =
+  cut t : nat
+    call two t
+    call fib d t
+
+proc fib3 (d: nat) =
+  cut t : nat
+    call three t
+    call fib d t
+
+proc fib4 (d: nat) =
+  cut t : nat
+    call four t
+    call fib d t
+
+proc fib5 (d: nat) =
+  cut t : nat
+    call five t
+    call fib d t
+
+proc fib6 (d: nat) =
+  cut t : nat
+    call six t
+    call fib d t

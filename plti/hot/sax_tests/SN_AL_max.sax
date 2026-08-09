@@ -1,0 +1,84 @@
+type nat = +{'zero : 1, 'succ : nat}
+
+proc max (d : nat) (x : nat) (y : nat) =
+  read x {
+  | 'zero(u) => read u ()
+                id d y
+  | 'succ(u) => read y {
+                | 'zero(v) => read v ()
+                              write d 'succ(u)
+                | 'succ(v) => cut r : nat
+                                call max r u v
+                              write d 'succ(r)
+                }
+  }
+
+fail proc max (d : nat) (x : nat) (y : nat) =
+  read x {
+  | 'zero(u) => read u ()
+                id d y
+  | 'succ(u) => read y {
+                | 'zero(v) => read v ()
+                              id d x
+                | 'succ(v) => cut r : nat
+                                call max r u v
+                              write d 'succ(r)
+                }
+  }
+
+proc zero (d : nat) =
+  cut u : 1
+    write u ()
+  write d 'zero(u)
+
+proc one (d : nat) =
+  cut u : nat
+    call zero u
+  write d 'succ(u)
+
+proc two (d : nat) =
+  cut u : nat
+    call one u
+  write d 'succ(u)
+
+proc max_one_zero (d : nat) =
+  cut u : nat
+    call one u
+  cut v : nat
+    call zero v
+  call max d u v
+
+  proc max_zero_one (d : nat) =
+  cut u : nat
+    call zero u
+  cut v : nat
+    call one v
+  call max d u v
+
+proc max_two_zero (d : nat) =
+  cut u : nat
+    call two u
+  cut v : nat
+    call zero v
+  call max d u v
+
+proc max_zero_two (d : nat) =
+  cut u : nat
+    call zero u
+  cut v : nat
+    call two v
+  call max d u v
+
+proc max_two_one (d : nat) =
+  cut u : nat
+    call two u
+  cut v : nat
+    call one v
+  call max d u v
+
+proc max_one_two (d : nat) =
+  cut u : nat
+    call one u
+  cut v : nat
+    call two v
+  call max d u v

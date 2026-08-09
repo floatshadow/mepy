@@ -1,0 +1,79 @@
+
+type nat = +{'zero : 1, 'succ : nat}
+type list = +{'nil : 1, 'cons : nat * list}
+
+
+proc append (d : list) (x : list) (y : list) =
+    read x {
+    | 'nil(u) => read u () id d y
+    | 'cons(l) => read l (hd, xs)
+                  cut z : list
+                    call append z xs y
+                  cut temp : nat * list
+                    write temp (hd, z)
+                  write d 'cons(temp)
+    }
+
+proc zero (d : nat) =
+    cut u : 1
+        write u ()
+    write d 'zero(u)
+
+proc one (d : nat) =
+    cut z : nat
+        call zero z
+    write d 'succ(z)
+
+proc zeros (d : list) =
+    cut z1 : nat
+        call zero z1
+    cut z2 : nat
+        call zero z2
+    cut z3 : nat
+        call zero z3
+    cut u : 1
+        write u ()
+    cut a : list
+        write a 'nil(u)
+    cut q : nat * list
+        write q (z1, a)
+    cut b : list
+        write b 'cons(q)
+    cut r : nat * list
+        write r (z2, b)
+    cut c : list
+        write c 'cons(r)
+    cut t : nat * list
+        write t (z3, c)
+    write d 'cons(t)
+
+ proc ones (d : list) =
+     cut o1 : nat
+         call one o1
+     cut o2 : nat
+         call one o2
+     cut o3 : nat
+         call one o3
+     cut u : 1
+         write u ()
+     cut a : list
+         write a 'nil(u)
+     cut q : nat * list
+         write q (o1, a)
+     cut b : list
+         write b 'cons(q)
+     cut r : nat * list
+         write r (o2, b)
+     cut c : list
+         write c 'cons(r)
+     cut t : nat * list
+         write t (o3, c)
+     write d 'cons(t)
+
+proc mixed (d : list) =
+    cut z : list
+        call zeros z
+    cut o : list
+        call ones o
+    call append d z o
+

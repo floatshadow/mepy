@@ -1,0 +1,42 @@
+type bool = +{'true: 1, 'false: 1}
+type bool_stream = +{'e: bool, 'b1: bool * bool_stream}
+
+proc get_true (d: bool) = 
+    cut u: 1
+        write u () 
+    write d 'true (u)
+
+proc get_false (d: bool) = 
+    cut u: 1
+        write u () 
+    write d 'false (u)
+
+fail proc bool_stream(d: bool_stream) = 
+    cut d : bool 
+        call get_true d 
+    cut b : (bool * bool_stream) 
+        write b (d, d)
+    write d 'b1(d)
+
+fail proc bool_stream(d: bool_stream) = 
+    cut d2 : bool 
+        call get_true d2 
+    cut b : (bool * bool_stream) 
+        write b (d2, d)
+    write d 'b1(d)
+
+fail proc bool_stream(d: bool_stream) = 
+    cut d2 : bool 
+        call get_true d2 
+    cut d3 : bool_stream
+        write d3 'e(d2)
+    cut b : (bool * bool_stream) 
+        write b (d2, d3)
+    write d 'b1(b)
+
+proc bool_stream(d: bool_stream) (b: bool_stream) = 
+    cut d2 : bool 
+        call get_true d2 
+    cut c : (bool * bool_stream) 
+        write c (d2, b)
+    write d 'b1(c)

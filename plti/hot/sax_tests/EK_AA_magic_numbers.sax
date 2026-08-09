@@ -1,0 +1,182 @@
+type bin = +{'b0 : bin, 'b1 : bin, 'e : 1}
+type nat = +{'zero : 1, 'succ : nat}
+
+proc zero (d : bin) =
+     cut u : 1
+         write u ()
+     cut x : bin
+         write x 'e(u)
+     write d 'b0(x)
+
+proc one (d : bin) =
+     cut u : 1
+         write u ()
+     cut x : bin
+         write x 'e(u)
+     write d 'b1(x)
+
+proc add (d : bin) (x : bin) (y : bin) =
+     read x {
+     | 'b0(x0) => read y {
+                  | 'b0(y0) => cut z : bin
+                                   call add z x0 y0
+                               write d 'b0(z)
+                  | 'b1(y1) => cut z : bin
+                                   call add z x0 y1
+                               write d 'b1(z)
+                  | 'e(u)   => read u ()
+                               write d 'b0(x0)
+                  }
+     | 'b1(x1) => read y {
+                  | 'b0(y0) => cut z : bin
+                                   call add z x1 y0
+                               write d 'b1(z)
+                  | 'b1(y1) => cut z0 : bin
+                                   call one z0
+                               cut z1 : bin
+                                   call add z1 x1 z0
+                               cut z2 : bin
+                                   call add z2 y1 z1
+                               write d 'b0(z2)
+                  | 'e(u)   => read u ()
+                               write d 'b1(x1)
+                  }
+     | 'e(u)   => read u ()
+                  read y {
+                  | 'b0(y0) => write d 'b0(y0)
+                  | 'b1(y1) => write d 'b1(y1)
+                  | 'e(u2)   => write d 'e(u2)
+                  }
+     }
+
+
+proc dealloc_nat (d : 1) (x : nat) =
+  read x {
+  | 'succ(n) => call dealloc_nat d n
+  | 'zero(u) => id d u
+  }
+
+proc dup_nat (d : nat * nat) (x : nat) =
+  read x {
+  | 'succ(x) => cut y : nat * nat
+                 call dup_nat y x
+              read y (y1, y2)
+              cut d1 : nat
+                write d1 'succ(y1)
+              cut d2 : nat
+                write d2 'succ(y2)
+              write d (d1, d2)
+  | 'zero(u) => cut d1 : nat
+                write d1 'zero(u)
+             cut d2 : nat
+                cut w : 1
+                   write w ()
+                write d2 'zero(w)
+             write d (d1, d2)
+  }
+
+proc fib (d : bin) (x : nat) =
+     read x {
+     | 'zero(u) => read u ()
+                   call one d
+     | 'succ(y) => cut ys : nat * nat
+                       call dup_nat ys y
+                   read ys (y1, y2)
+                   read y1 {
+                   | 'zero(u) => read u ()
+                                 cut v : 1
+                                     call dealloc_nat v y2
+                                 read v ()
+                                 call one d
+                   | 'succ(z) => cut fib1 : bin
+                                     call fib fib1 z
+                                 cut fib2 : bin
+                                     call fib fib2 y2
+                                 call add d fib1 fib2
+                   }
+     }
+
+
+proc two (d : bin) =
+     cut u : 1
+         write u ()
+     cut x : bin
+         write x 'e(u)
+     cut y : bin
+         write y 'b1(x)
+     write d 'b0(y)
+
+proc three (d : bin) =
+     cut x : bin
+         call one x
+     cut y : bin
+         call two y
+     call add d x y
+
+proc four (d : bin) =
+     cut x : bin
+         call two x
+     cut y : bin
+         call two y
+     call add d x y
+
+proc five (d : bin) =
+     cut x : bin
+         call two x
+     cut y : bin
+         call three y
+     call add d x y
+
+proc eight (d : bin) =
+     cut x : bin
+         call five x
+     cut y : bin
+         call three y
+     call add d x y
+
+proc eighteen (d : bin) =
+     cut x : bin
+         call eight x
+     cut y : bin
+         call five y
+     cut z : bin
+         call five z
+     cut a : bin
+         call add a x y
+     call add d a z
+
+
+proc twohundredfiftyone (d : bin) =
+     cut u : 1
+         write u ()
+     cut z : nat
+         write z 'zero(u)
+     cut n1 : nat
+         write n1 'succ(z)
+     cut n2 : nat
+         write n2 'succ(n1)
+     cut n3 : nat
+         write n3 'succ(n2)
+     cut n4 : nat
+         write n4 'succ(n3)
+     cut n5 : nat
+         write n5 'succ(n4)
+     cut n6 : nat
+         write n6 'succ(n5)
+     cut n7 : nat
+         write n7 'succ(n6)
+     cut n8 : nat
+         write n8 'succ(n7)
+     cut n9 : nat
+         write n9 'succ(n8)
+     cut n10 : nat
+         write n10 'succ(n9)
+     cut n11 : nat
+         write n11 'succ(n10)
+     cut n12 : nat
+         write n12 'succ(n11)
+     cut fib13 : bin
+         call fib fib13 n12
+     cut b18 : bin
+         call eighteen b18
+     call add d fib13 b18

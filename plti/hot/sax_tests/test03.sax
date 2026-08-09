@@ -1,0 +1,83 @@
+// Testing subtyping
+
+type bin = +{'b0 : bin, 'b1 : bin, 'e : 1}
+type zbin = +{'b0 : zbin,          'e : 1}
+
+type std = +{'b0 : pos, 'b1 : std, 'e : 1}
+type pos = +{'b0 : pos, 'b1 : std        }
+type zero = +{                     'e : 1}
+
+proc s0z (d : zbin) (x : zero) = id d x
+fail proc nsz0 (d : zero) (x : zbin) = id d x
+proc s0b (d : bin) (x : zbin) = id d x
+fail proc nsb0 (d : zbin) (x : bin) = id d x
+
+proc sps (d : std) (x : pos) = id d x
+fail proc nssp (d : pos) (x : std) = id d x
+
+proc szs (d : std) (x : zero) = id d x
+fail proc nssz (d : zero) (x : std) = id d x
+
+fail proc nspz (d : pos) (x : zero) = id d x
+fail proc nszp (d : zero) (x : pos) = id d x
+
+proc ssb (d : bin) (x : std) = id d x
+fail proc nsbs (d : std) (x : bin) = id d x
+
+type bool = +{'false : 1, 'true : 1}
+type false = +{'false : 1}
+type true = +{'true : 1}
+
+proc is_zbin (d : true) (x : zbin) =
+  read x {
+  | 'b0(y) => call is_zbin d y
+  | 'e(u) => write d 'true(u)
+  }
+
+proc is_std (d : true) (x : std) =
+  read x {
+  | 'b0(y) => call is_pos d y
+  | 'b1(y) => call is_std d y
+  | 'e(u) => write d 'true(u)
+  }
+
+proc is_pos (d : true) (x : pos) =
+  read x {
+  | 'b0(y) => call is_pos d y
+  | 'b1(y) => call is_std d y
+  // no case for 'e(u)
+  }
+
+proc is_zero (d : true) (x : zero) =
+  read x {
+  | 'e(u) => write d 'true(u)
+  }
+
+proc inc (d : pos) (x : std) =
+  read x {
+  | 'b0(y) => write d 'b1(y)
+  | 'b1(y) => cut z : pos
+                call inc z y
+              write d 'b0(z)
+  | 'e(u) => cut z : std
+               write z 'e(u)
+             write d 'b1(z)
+  }
+
+/* various rules where subtyping has to be checked */
+proc pair (d : bin * bin) (x : pos) (y : std) = write d (x, y)
+proc inj (d : +{'some : bin, 'none : 1}) (x : std) = write d 'some(x)
+proc call1 (d : bin) (x : std) = call inc d x
+proc call2 (d : pos) (x : zero) = call inc d x
+fail proc call3 (d : zero) (x : std) = call inc d x
+fail proc call3 (d : pos) (x : bin) = call inc d x
+
+type binempty = +{'cons : bin * stdempty}
+type stdempty = +{'cons : std * stdempty}
+type binlist = +{'nil : 1, 'cons : bin * binlist}
+type stdlist = +{'nil : 1, 'cons : std * stdlist}
+
+proc s_stdlist_binlist (d : binlist) (xs : stdlist) = id d xs
+fail proc s_binlist_stdlist (d : stdlist) (xs : binlist) = id d xs
+proc s_stdempty_stdlist (d : stdlist) (xs : stdempty) = id d xs
+fail proc s_binempty_stdlist (d : stdlist) (xs : binempty) = id d xs

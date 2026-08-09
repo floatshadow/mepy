@@ -1,0 +1,42 @@
+// should work
+type nat = +{'zero : 1, 'succ : nat}
+type bool = +{'true : 1, 'false : 1}
+
+proc even (d : bool) (n : nat) =
+    read n {
+    | 'zero(u) => write d 'true(u)
+    | 'succ(m) => call odd d m
+    }
+
+proc odd (d : bool) (n : nat) =
+    read n {
+    | 'zero(u) => write d 'false(u)
+    | 'succ(m) => call even d m
+    }
+
+proc zero (d : nat) =
+    cut u : 1
+        write u ()
+    write d 'zero(u)
+
+proc one (d : nat) =
+    cut z : nat
+        call zero z
+    write d 'succ(z)
+
+proc two (d : nat) =
+    cut o : nat
+        call one o
+    write d 'succ(o)
+
+// should be true
+proc test1 (d : bool) =
+    cut t : nat
+        call two t
+    call even d t
+
+// should be false
+proc test2 (d : bool) =
+    cut t : nat
+        call two t
+    call odd d t

@@ -1,0 +1,52 @@
+type nat = +{'zero : 1, 'succ : nat}
+
+proc zero (d : nat) =
+    cut u : 1
+        write u ()
+    write d 'zero (u)
+
+proc succ (d : nat) (x : nat) =
+    read x {
+    | 'zero (x0) =>
+        cut y : nat
+            write y 'zero (x0)
+            write d 'succ (y)
+    | 'succ (x1) =>
+        cut y : nat
+            write y 'succ (x1)
+            write d 'succ (y)
+    }
+
+proc pred (d : nat) (x : nat) =
+    read x {
+    | 'zero (x0) => write d 'zero (x0)
+    | 'succ (x1) => id d x1
+    }
+
+proc add (d : nat) (x1 : nat) (x2 : nat) =
+    read x1 {
+    | 'zero (x0) =>
+        read x0 ()
+        id d x2
+    | 'succ (x1) =>
+        cut temp : nat
+            call add temp x1 x2
+            write d 'succ (temp)
+    }
+
+proc one (d : nat) =
+    cut n : nat
+        call zero n
+    call succ d n
+
+proc two (d : nat) =
+    cut n : nat
+        call one n
+    call succ d n
+
+proc three (d : nat) =
+    cut n : nat
+        call one n
+    cut m : nat
+        call two m
+    call add d m n

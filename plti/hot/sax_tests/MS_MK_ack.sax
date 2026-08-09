@@ -1,0 +1,154 @@
+type nat = +{ 'zero : 1, 'succ : nat }
+type bool = +{ 'true : 1, 'false : 1 }
+
+proc zero (d : nat) =
+  cut u : 1
+    write u ()
+    write d 'zero(u)
+
+proc succ (d : nat) (n : nat) =
+  write d 'succ(n)
+
+proc one (d : nat) =
+  cut z : nat
+    call zero z
+    call succ d z
+
+proc add (d : nat) (a : nat) (b : nat) =
+  read b {
+  | 'zero(u) => read u ()
+                  id d a
+  | 'succ(s) => cut x : nat
+                  call add x a s
+                  call succ d x
+  }
+
+proc two (d : nat) =
+  cut one1 : nat
+    call one one1
+    cut one2 : nat
+      call one one2
+      call add d one1 one2
+
+proc three (d : nat) =
+  cut t : nat
+    call two t
+    call succ d t
+
+proc dealloc_nat (d : 1) (n : nat) =
+  read n {
+  | 'zero(u) => id d u
+  | 'succ(s) => call dealloc_nat d s
+  }
+
+proc dup_nat (d : nat * nat) (n : nat) =
+  read n {
+  | 'zero(u) => cut z1 : nat
+                  write z1 'zero(u)
+                  cut z2 : nat
+                    call zero z2
+                    write d (z1, z2)
+  | 'succ(s) => cut ss : nat * nat
+                  call dup_nat ss s
+                  read ss (s1, s2)
+                    cut d1 : nat
+                      call succ d1 s1
+                      cut d2 : nat
+                        call succ d2 s2
+                        write d (d1, d2)
+  }
+
+proc mul (d : nat) (a : nat) (b : nat) =
+  read b {
+  | 'zero(u) => cut w : 1
+                  call dealloc_nat w a
+                  read w ()
+                    write d 'zero(u)
+  | 'succ(s) => cut as : nat * nat
+                  call dup_nat as a
+                  read as (a1, a2)
+                    cut e : nat
+                      call mul e a1 s
+                      call add d a2 e
+  }
+
+proc four (d : nat) =
+  cut two1 : nat
+    call two two1
+    cut two2 : nat
+      call two two2
+      call mul d two1 two2
+
+proc five (d : nat) =
+  cut two : nat
+    call two two
+    cut three : nat
+      call three three
+      call add d two three
+
+proc six (d : nat) =
+  cut two : nat
+    call two two
+    cut three : nat
+      call three three
+      call mul d two three
+
+proc ack (d : nat) (m : nat) (n : nat) =
+  read m {
+  | 'zero(u) => read u ()
+                  call succ d n
+  | 'succ(m1) => read n {
+    | 'zero(u) => read u ()
+                    cut o : nat
+                      call one o
+                      call ack d m1 o
+    | 'succ(n1) => cut dupm1 : nat * nat
+                     call dup_nat dupm1 m1
+                     read dupm1 (m1a, m1b)
+		       cut magain : nat
+		       write magain 'succ(m1a)
+		       cut newn : nat
+		         call ack newn magain n1
+			 call ack d m1b newn
+    }
+  }
+
+proc nat_eq (d : bool) (a : nat) (b : nat) =
+  read a {
+  | 'zero(u1) => read u1 ()
+                   read b {
+		   | 'zero(u2) => write d 'true(u2)
+		   | 'succ(n) => cut u3 : 1
+		                   call dealloc_nat u3 n
+				   write d 'false(u3)
+		   }
+  | 'succ(n1) => read b {
+                | 'zero(u1) => cut u2 : 1
+		                 call dealloc_nat u2 n1
+				 read u2 ()
+				   write d 'false(u1)
+		| 'succ(n2) => call nat_eq d n1 n2
+                }
+  }
+
+proc twenty_nine (d : nat) =
+  cut f1 : nat
+    call five f1
+    cut f2 : nat
+      call five f2
+      cut twenty_five : nat
+        call mul twenty_five f1 f2
+	cut four : nat
+	  call four four
+	  call add d twenty_five four
+
+proc ack3_2_is_29 (d : bool) =
+  cut m : nat
+    call three m
+    cut n : nat
+      call two n
+      cut ack_3_2 : nat
+        call ack ack_3_2 m n
+	cut twenty_nine : nat
+	  call twenty_nine twenty_nine
+	  call nat_eq d ack_3_2 twenty_nine

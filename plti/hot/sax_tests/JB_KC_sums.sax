@@ -1,0 +1,39 @@
+type dir = +{'left:1,'right:1}
+type one_dir = +{'left:1}
+fail type one_fail = +{'$:right}
+
+type sum_names = +{'q:1,'A:1,'_:1,'0:1,'$:1,'aA_1$:1, 'value: 1}
+proc test_sum_names (u:1) (x:sum_names) = 
+    read x {
+    | 'q(o) => id u o
+    | 'A(o) => id u o
+    | '_(o) => id u o
+    | '0(o) => id u o
+    | '$(o) => id u o
+    | 'aA_1$(o) => id u o
+    | 'value(o) => id u o
+    }
+
+fail type dup_sum = +{'q:1, 'x:1, 'q:1}
+type nest_sum = +{'q:1}
+type dup_nest_sum = +{'q:1,'x:nest_sum}
+
+fail proc missing_branch (u:1) (x:dup_nest_sum) = 
+    read x {
+    |'q(o) => {{{{{{{id u o}}}}}}}
+}
+
+fail proc read_inline (u:1) (x:dup_nest_sum) = 
+    read x 'q(o)
+    id u o
+
+proc full_match (u:1) (x:dup_nest_sum) = 
+    read x {
+    |'q(o) => {{{{{{{id u o}}}}}}}
+    |'x(i) => read i {
+                | 'q(r) => id u r
+            }
+}
+
+fail proc sum_eq_cp (r:one_dir) (d:dir) = id r d
+proc sum_eq_cp (r:dir) (d:one_dir) = id r d

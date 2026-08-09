@@ -1,0 +1,96 @@
+type nat = +{'zero : 1, 'succ : nat}
+type tree = +{'empty : 1, 'node : tree * tree}
+
+proc zero (d : nat) =
+  cut u : 1
+    write u ()
+  write d 'zero(u)
+
+proc add (d : nat) (x : nat) (y : nat) =
+  read x {
+  | 'zero(u) => read u ()
+                id d y
+  | 'succ(u) => cut r : nat
+                  call add r u y
+                write d 'succ(r)
+  }
+
+proc num_nodes (d : nat) (t : tree) =
+  read t {
+  | 'empty(u) => read u ()
+                call zero d
+  | 'node(t) => read t (l, r)
+                cut l_d : nat
+                  call num_nodes l_d l
+                cut r_d : nat
+                  call num_nodes r_d r
+                cut r_ : nat
+                  call add r_ l_d r_d
+                write d 'succ(r_)
+  }
+
+proc empty (d : tree) =
+  cut u : 1
+    write u ()
+  write d 'empty(u)
+
+proc empty_empty (d : tree) =
+  cut l : tree
+    call empty l
+  cut r : tree
+    call empty r
+  cut temp : tree * tree
+    write temp (l, r)
+  write d 'node(temp)
+
+proc node_empty (d : tree) =
+  cut l : tree
+    call empty_empty l
+  cut r : tree
+    call empty r
+  cut temp : tree * tree
+    write temp (l, r)
+  write d 'node(temp)
+
+proc empty_node (d : tree) =
+  cut l : tree
+    call empty l
+  cut r : tree
+    call empty_empty r
+  cut temp : tree * tree
+    write temp (l, r)
+  write d 'node(temp)
+
+proc big_tree (d : tree) =
+  cut l : tree
+    call empty_node l
+  cut r : tree
+    call node_empty r
+  cut temp : tree * tree
+    write temp (l, r)
+  write d 'node(temp)
+
+proc empty_num_nodes (d : nat) =
+  cut t : tree
+    call empty t
+  call num_nodes d t
+
+proc empty_empty_num_nodes (d : nat) =
+  cut t : tree
+    call empty_empty t
+  call num_nodes d t
+
+proc node_empty_num_nodes (d : nat) =
+  cut t : tree
+    call node_empty t
+  call num_nodes d t
+
+proc empty_node_num_nodes (d : nat) =
+  cut t : tree
+    call empty_node t
+  call num_nodes d t
+
+proc big_tree_num_nodes (d : nat) =
+  cut t : tree
+    call big_tree t
+  call num_nodes d t

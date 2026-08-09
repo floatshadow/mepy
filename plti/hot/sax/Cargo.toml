@@ -1,0 +1,16 @@
+[package]
+name = "sax"
+version = "0.1.0"
+edition = "2024"
+
+[build-dependencies]
+lalrpop = "0.22.0"
+
+[dependencies]
+lalrpop-util = { version = "0.21.0", features = ["lexer", "unicode"] }
+logos = "0.15.0"
+
+# change me later probably
+[[bin]]
+name = "sax"
+path = "src/main.rs"

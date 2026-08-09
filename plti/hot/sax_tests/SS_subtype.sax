@@ -1,0 +1,30 @@
+// should work
+type ten = +{'one : 1, 'two : 1, 'three : 1, 'four : 1, 'five : 1, 'six : 1, 'seven : 1, 'eight : 1, 'nine : 1, 'ten : 1}
+type subten = +{'eight : 1, 'three : 1, 'nine : 1, 'one : 1, 'two : 1}
+
+proc deallocTen (d : 1) (t : ten) =
+    read t {
+    | 'one(u) => id d u
+    | 'two(u) => id d u
+    | 'three(u) => id d u
+    | 'four(u) => id d u
+    | 'five(u) => id d u
+    | 'six(u) => id d u
+    | 'seven(u) => id d u
+    | 'eight(u) => id d u
+    | 'nine(u) => id d u
+    | 'ten(u) => id d u
+    }
+
+proc deallocSubten (d : 1) (s : subten) =
+    call deallocTen d s
+
+proc subThree (d : subten) =
+    cut u : 1
+        write u ()
+    write d 'three(u)
+
+proc test (d : 1) =
+    cut s : subten
+        call subThree s
+    call deallocSubten d s

@@ -1,0 +1,14 @@
+
+
+type nat = +{'zero : 1, 'succ : nat}
+
+// same defn should fail
+fail type nat = +{'zero : 1, 'succ : nat} 
+
+// different defn with the same name should also fail
+fail type nat = +{'baz : 1}
+
+fail type notnat = +{'yes : 1, 'yes : 1}            // arbitrary error
+
+// this should succeed because the previous defn of the same name is in fail
+type notnat = +{'yes : 1}

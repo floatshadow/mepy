@@ -1,0 +1,35 @@
+
+fail proc g (d: 1) (x: 1) = 
+    cut x : 1 
+        cut f : 1
+            write f ()
+        read f ()
+        write x () 
+    read x ()
+    write d ()
+
+fail proc g (d: 1) (x: 1) = 
+    cut x : 1 
+        cut f : 1
+            write f ()
+        read f ()
+        write x () 
+    read x ()
+    read x ()
+    write d ()
+
+proc f (d: 1) (x: 1) = 
+    cut g : 1 
+        write g ()
+    read g ()
+    id d x
+
+proc g (d: 1) (x: 1) = 
+    read x ()
+    cut y : 1 
+        cut f : 1
+            write f ()
+        read f ()
+        write y () 
+    read y ()
+    write d ()

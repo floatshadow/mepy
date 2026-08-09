@@ -1,0 +1,97 @@
+type nat = +{'zero : 1, 'succ : nat}
+type list = +{'nil : 1, 'cons : nat * list}
+
+type conat = +{'state : nat}
+
+proc double (d : nat) (x : nat) =
+    read x {
+    | 'zero(u) => write d 'zero(u)
+    | 'succ(n) => cut dp : nat
+                      call double dp n
+                  cut np : nat
+                      write np 'succ(dp)
+                  write d 'succ(np)
+    }
+
+proc inits (d : nat) =
+    cut u : 1
+        write u ()
+    write d 'zero(u)
+
+proc init (d : conat) =
+    cut s : nat
+        call inits s
+    write d 'state(s)
+
+proc inc (d : nat) (x : nat) =
+    write d 'succ(x)
+
+proc dup (d : nat * nat) (x : nat) =
+    read x {
+    | 'zero(u1) => cut u2 : 1
+                       write u2 ()
+                   cut x1 : nat
+                       write x1 'zero(u1)
+                   cut x2 : nat
+                       write x2 'zero(u2)
+                   write d (x1, x2)
+    | 'succ(n) => cut n1n2 : nat * nat
+                      call dup n1n2 n
+                  read n1n2 (n1, n2)
+                  cut n1n : nat
+                      write n1n 'succ(n1)
+                  cut n2n : nat
+                      write n2n 'succ(n2)
+                  write d (n1n, n2n)
+    }
+
+proc expose (d : nat * conat) (x : conat) =
+    read x {
+    | 'state(s) => cut s1s2 : nat * nat
+                       call dup s1s2 s
+                   read s1s2 (s1, s2)
+                   cut ns : nat
+                       call inc ns s1
+                   cut elt : nat
+                       call double elt s2
+                   cut ncn : conat
+                       write ncn 'state(ns)
+                   write d (elt, ncn)
+    }
+
+proc test (d : list * conat) =
+    cut c0 : conat
+        call init c0
+    cut t1 : nat * conat
+        call expose t1 c0
+    read t1 (n1, c1)
+    cut t2 : nat * conat
+        call expose t2 c1
+    read t2 (n2, c2)
+    cut t3 : nat * conat
+        call expose t3 c2
+    read t3 (n3, c3)
+    cut t4 : nat * conat
+        call expose t4 c3
+    read t4 (n4, c4)
+    cut u : 1
+        write u ()
+    cut l0 : list
+        write l0 'nil(u)
+    cut l1 : list
+        cut elt1 : nat * list
+            write elt1 (n1, l0)
+        write l1 'cons(elt1)
+    cut l2 : list
+        cut elt2 : nat * list
+            write elt2 (n2, l1)
+        write l2 'cons(elt2)
+    cut l3 : list
+        cut elt3 : nat * list
+            write elt3 (n3, l2)
+        write l3 'cons(elt3)
+    cut l4 : list
+        cut elt4 : nat * list
+            write elt4 (n4, l3)
+        write l4 'cons(elt4)
+    write d (l4, c4)

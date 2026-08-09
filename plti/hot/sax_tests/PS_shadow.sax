@@ -1,0 +1,38 @@
+fail proc shadow (x : 1) (y : 1) =
+  cut z : 1
+    cut y : 1
+      cut x : 1
+        read y ()
+        write x ()
+      read x ()
+      cut z : 1
+        write z ()
+      read z ()
+      write y ()
+    cut x : 1
+      cut y : 1
+        write y ()
+      read y ()
+      write x ()
+    read y ()
+    read x ()
+    write z ()
+  read z ()
+  write x ()
+
+fail proc shadow2 (x : 1) =
+  cut x : 1
+    write x ()
+  id x x
+
+fail proc weird (x : 1) (y : 1) =
+  cut y : 1
+    cut z : 1
+      id z y
+    id y z
+  id x y
+
+fail proc weird2 (x : 1) (y : 1) =
+  cut y : 1
+    id y y
+  id x y

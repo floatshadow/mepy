@@ -1,0 +1,146 @@
+type nat = +{'zero : 1, 'succ : nat}
+type bool = +{'true : 1, 'false : 1}
+
+proc duplicate_nat (d : nat*nat) (x : nat) =
+     read x {
+     | 'zero(u) => cut v : 1
+                     write v ()
+		   cut fst : nat
+		     write fst 'zero(u)
+		   cut snd : nat
+		     write snd 'zero(v)
+		   write d (fst, snd)
+     | 'succ(u) => cut duped : nat*nat
+                     call duplicate_nat duped u
+		   read duped{
+		   | (fst, snd) =>
+		   cut nfst : nat
+		     write nfst 'succ(fst)
+		   cut nsnd : nat
+		     write nsnd 'succ(snd)
+		   write d (nfst, nsnd)
+		   }
+     }
+
+proc dealloc_nat (d : 1) (x : nat) =
+     read x {
+     | 'zero(u) => id d u
+     | 'succ (n) => call dealloc_nat d n
+     }
+
+proc addition (d : nat) (x : nat) (y : nat) =
+     read x {
+     | 'zero(u) => read u {|()=> id d y}
+     | 'succ(n) => cut smaller : nat
+                     call addition smaller n y
+		   write d 'succ(smaller)
+     }
+
+proc multiplication (d : nat) (x : nat) (y : nat) =
+     read x {
+     | 'zero(u) => read y{
+                        | 'zero(v) => read v{|()=> write d 'zero(u)}
+			| 'succ(n) => cut z : nat
+			                write z 'zero(u)
+			              call multiplication d z n
+                        }
+     | 'succ(n) => cut duped : nat*nat
+                     call duplicate_nat duped y
+		   read duped {
+		   | (fst, snd) => cut smaller : nat
+		                     call multiplication smaller n fst
+				   call addition d smaller snd
+		   }
+     }
+
+proc divide_by_two (d : nat*bool) (x : nat) =
+     read x {
+     | 'zero(u) => cut z : nat
+                     write z 'zero(u)
+		   cut e : 1
+		     write e ()
+		   cut b : bool
+		     write b 'false(e)
+		   write d (z, b)
+     | 'succ(n) => read n {
+                   | 'zero(u) => cut z : nat
+		                   write z 'zero(u)
+				 cut e : 1
+				   write e ()
+				 cut b : bool
+				   write b 'true(e)
+				 write d (z, b)
+		   | 'succ(n) => cut recurse : nat*bool
+		                   call divide_by_two recurse n
+				 read recurse {
+				 | (num, carry) => cut nnum : nat
+				                     write nnum 'succ(num)
+						   write d (nnum, carry)
+				 }
+                   }
+     }
+
+proc binexp (d : nat) (b : nat) (e : nat) =
+   cut halved : nat*bool
+     call divide_by_two halved e
+   read halved {
+   | (n, carry) => read n {
+                   | 'zero(u) => read carry {
+		                 | 'true(v) => read u{|() => read v{|() => id d b}}
+				 | 'false(v) => read u{|() => read v{|() => cut z : 1
+				                                              call dealloc_nat z b
+									    cut zer : nat
+									      write zer 'zero(z)
+									    write d 'succ(zer)}}
+				 }
+		   | 'succ(n) => cut dupbases : nat*nat
+		                   call duplicate_nat dupbases b
+				 read dupbases {
+				 | (b1, b2) => cut ne : nat
+				                 write ne 'succ(n)
+					       cut r : nat
+					         call binexp r b1 ne
+					       cut dup_r : nat*nat
+					         call duplicate_nat dup_r r
+					       read dup_r {
+					       | (r1, r2) => cut ans_without_carry : nat
+					                     call multiplication ans_without_carry r1 r2
+							   read carry {
+							   | 'false(u) => read u {|()=> cut z : 1
+							                                  call dealloc_nat z b2
+											read z {|()=> id d ans_without_carry}}
+							   | 'true(u) => read u {|()=> call multiplication d b2 ans_without_carry}
+							   }
+					       }
+				 }
+                   }
+
+   }
+
+
+proc zero (d : nat) = cut z : 1
+                        write z ()
+	              write d 'zero(z)
+
+proc one (d : nat) = cut z : nat
+                       call zero z
+		     write d 'succ(z)
+
+proc two (d : nat) = cut z : nat
+                       call one z
+		     write d 'succ(z)
+
+proc three (d : nat) = cut z : nat
+                       call two z
+		     write d 'succ(z)
+
+proc four (d : nat) = cut z : nat
+                       call three z
+		     write d 'succ(z)
+
+proc sixteen (d : nat) = cut t : nat
+                           call two t
+			 cut f : nat
+			   call four f
+			 call binexp d t f
+		     

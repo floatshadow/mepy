@@ -1,0 +1,101 @@
+grammar<'input>;
+
+use crate::parse::lex::Token;
+use crate::parse::ast::{Type, Defn, Pattern, Cmd, Env};
+
+extern {
+    type Location = usize;
+    type Error = String;
+
+    enum Token<'input> {
+        "ident" => Token::Ident(<&'input str>),
+        "tag" => Token::Tag(<&'input str>),
+        "{" => Token::LBrace,
+        "}" => Token::RBrace,
+        "(" => Token::LParen,
+        ")" => Token::RParen,
+        "," => Token::Comma,
+        ":" => Token::Colon,
+        "=" => Token::Equal,
+        "|" => Token::Pipe,
+        "1" => Token::One,
+        "+" => Token::Plus,
+        "*" => Token::Ast,
+        "=>" => Token::Arrow,
+        "read" => Token::Read,
+        "proc" => Token::Proc,
+        "type" => Token::Type,
+        "write" => Token::Write,
+        "cut" => Token::Cut,
+        "id" => Token::Id,
+        "call" => Token::Call,
+        "fail" => Token::Fail,
+    }
+}
+
+pub Prog : Env = {
+   <v: Dfn*> => v 
+}
+
+// this is a slight hack to get around lalrpop being silly
+// https://github.com/lalrpop/lalrpop/pull/591
+TpWrapper : Type = <Tp>;
+
+Tp : Type = {
+    #[precedence(level="0")]
+    <i : Ident> => Type::TpName(i),
+    "(" <t : TpWrapper> ")" => t,
+    "1" => Type::One,
+    "+" "{" <mut v : ( <Tag> ":" <TpWrapper> "," )*> <t : Tag> ":" <tp: TpWrapper>  "}" => {
+        v.push((t, tp));
+        Type::Plus(v)
+    },
+    #[precedence(level="1")] #[assoc(side="right")]
+    <t1 : Tp> "*" <t2 : Tp> => Type::Times(Box::new(t1), Box::new(t2)),
+}
+
+
+Dfn : Defn = {
+    "type" <i: Ident> "=" <tp: Tp> => Defn::TypeDefn(i, tp),
+    "proc" <i : Ident> <p : Parm> <ps : Parms> "=" <c : Cmd> => Defn::ProcDefn(i, p, ps, c),
+    "fail" <d : Dfn> => Defn::FailDefn(Box::new(d)),
+}
+
+Branch : (Pattern, Cmd) = {
+    "|" <p : Pat> "=>" <c : Cmd> => (p, c)
+}
+
+Cmd : Cmd = {
+    "id" <i1 : Ident> <i2 : Ident> => Cmd::Id(i1, i2),
+    "read" <i : Ident> "{" <bs : Branch+> "}" => Cmd::Read(i, bs),
+    "read" <i : Ident> <p : Pat> <c : Cmd> => Cmd::Read(i, vec![(p, c)]),
+    "write" <i : Ident> <p : Pat> => Cmd::Write(i, p),
+    "cut" <i : Ident> ":" <t : Tp> <c1 : Cmd> <c2 : Cmd> => Cmd::Cut(i, t, Box::new(c1), Box::new(c2)),
+    "call" <p : Ident> <v1 : Ident> <vs : (<Ident>)*> => Cmd::Call(p, v1, vs),
+    "{" <c : Cmd> "}" => c
+}
+
+Pat : Pattern = {
+    <t : "tag"> "(" <i : Ident> ")" => Pattern::InjPat(t.to_string(), i),
+    "(" <i1 : Ident> "," <i2 : Ident> ")" => Pattern::PairPat(i1, i2),
+    "(" ")" => Pattern::UnitPat
+}
+
+Parm : (String, Type) = {
+    "(" <i : Ident> ":" <t : Tp> ")" => (i, t),
+}
+Parms : Vec<(String, Type)> = {
+    <v : ("(" <Ident> ":" <Tp> ")")*> => v, 
+}
+
+Tag : String = {
+    <t : "tag"> => t.to_owned()
+}
+
+Ident: String = {
+    <i: "ident"> => {
+        i.to_owned()
+    }
+}
+
+

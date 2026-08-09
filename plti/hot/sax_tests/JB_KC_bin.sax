@@ -1,0 +1,292 @@
+type bool = +{'true : 1, 'false: 1}
+type nat = +{'zero : 1, 'succ : nat}
+type bin = +{'end : 1, 'b0 : bin, 'b1 : bin}
+
+proc iforgorbool (x:1) (b:bool) = read b {
+				  | 'true(u) => id x u
+				  | 'false(u) => id x u
+}
+
+proc iforgornat (r:1) (x:nat) = read x {
+        | 'zero(u) => id r u
+        | 'succ(x) => call iforgornat r x
+}
+
+proc iforgorbin (r:1) (b:bin) = 
+	read b {
+	| 'end(u) =>	id r u
+	| 'b0(b) =>	call iforgorbin r b
+	| 'b1(b) =>	call iforgorbin r b
+	}
+
+proc not (n:bool) (b:bool) = 
+	read b {
+	| 'true(u) =>	write n 'false(u)
+	| 'false(u) =>	write n 'true(u)
+	}
+
+proc zeronat (x:nat) = cut u :1
+                      write u ()
+                    write x 'zero(u)
+
+proc succnat (r:nat) (x:nat) = write r 'succ(x)
+
+proc prednat (r:nat) (x:nat) = read x {
+  | 'zero(u) => cut n : nat
+                   write n 'zero(u)
+                id r n
+  | 'succ(n) => id r n
+ }
+
+proc onenat (o:nat) = cut z : nat
+                     call zeronat z
+                   call succnat o z
+
+proc twonat (tw:nat) = cut o : nat
+                     call onenat o
+                   call succnat tw o
+
+proc threenat (th:nat) = cut tw : nat
+                       call twonat tw
+                     call succnat th tw
+
+proc fournat (f:nat) =
+	cut th : nat
+	  call threenat th
+	call succnat f th
+
+proc leqnat (r: bool) (a: nat) (b: nat) = read a {
+| 'zero(u) => 	cut v : 1
+			call iforgornat v b
+		read u ()
+		write r 'true(v)
+| 'succ(m) =>	read b {
+
+		| 'zero(v) =>	cut u : 1
+					call iforgornat u m
+				read u ()
+				write r 'false(v)
+		| 'succ(n) =>	call leqnat r m n
+		}
+}
+
+proc succbin (r:bin) (b: bin) =
+	read b {
+	| 'end(u) =>	read u ()
+			call onebin r
+	| 'b0(b) =>	write r 'b1(b)
+	| 'b1(b) =>	cut succrest : bin
+			  call succbin succrest b
+			write r 'b0(succrest)
+	}
+
+proc nilbin (z:bin) = 
+	cut u : 1
+	  write u ()
+	write z 'end(u)
+
+proc onebin (o:bin) =
+	cut z : bin
+	  call nilbin z
+	write o 'b1(z)
+
+proc twobin (tw:bin) = 
+	cut z : bin
+	  call nilbin z
+	cut o : bin
+	  write o 'b1(z)
+	write tw 'b0(o)
+
+proc twobin2 (tw:bin) = 
+	cut o : bin
+	  call onebin o
+	call succbin tw o
+
+proc threebin (th:bin) = 
+	cut tw : bin
+	  call twobin tw
+	call succbin th tw
+
+proc fourbin (f:bin) =
+	cut th : bin
+	  call threebin th
+	call succbin f th
+
+proc leqbin (leq : bool) (a: bin) (b: bin) =
+	read a {
+	| 'end(u) =>	cut v : 1
+			  call iforgorbin v b
+			read v ()
+			write leq 'true(u)
+	| 'b0(a) => read b {
+			| 'end(v) =>	cut u : 1
+					  call iforgorbin u a
+					read v ()
+					write leq 'false(u)
+			| 'b0(b) =>	call leqbin leq a b
+			| 'b1(b) =>	call leqbin leq a b
+		    }
+	| 'b1(a) => read b {
+			| 'end(v) =>	cut u : 1
+                                          call iforgorbin u a
+                                        read v ()
+                                        write leq 'false(u)
+			| 'b0(b) =>	cut ngt : bool
+					  call leqbin ngt b a
+					call not leq ngt
+			| 'b1(b) =>	call leqbin leq a b
+		    }
+	}
+
+proc twoleqthree (b: bool) =
+	cut tw : bin
+	  call twobin tw
+	cut th : bin
+	  call threebin th
+	call leqbin b tw th
+
+proc threeleqtwo (b: bool) = 
+	cut tw : bin
+	  call twobin tw
+	cut th : bin
+	  call threebin th
+	call leqbin b th tw
+
+proc threeleqthree (b: bool) = 
+	cut th : bin
+	  call threebin th
+	cut ths : bin * bin
+	  call dupbin ths th
+	read ths (th1,th2)
+	call leqbin b th1 th2
+
+fail proc dupbin (bs: bin * bin) (b: bin) = 
+	read b {
+	| 'end(u) =>	cut b1 : bin
+			  write b1 'end(u)
+			cut b2 : bin
+			  call nilbin b2
+			write bs (b1,b2)
+	| 'b0(b) =>	cut bs : bin * bin
+			  call dupbin bs b
+			read bs (b1,b2)
+			cut c1 : bin
+			  write c1 'b0(b1)
+			cut c2 : bin
+			  write c2 'b0(b2)
+			write bs (c1,c2)
+	| 'b1(b) =>     cut bs : bin * bin
+                          call dupbin bs b
+                        read bs (b1,b2)
+                        cut c1 : bin
+                          write c1 'b1(b1)
+                        cut c2 : bin
+                          write c2 'b1(b2)
+                        write bs (c1,c2)
+	}
+			
+
+proc dupbin (bs: bin * bin) (b: bin) =
+        read b {
+        | 'end(u) =>    cut b1 : bin
+                          write b1 'end(u)
+                        cut b2 : bin
+                          call nilbin b2
+                        write bs (b1,b2)
+        | 'b0(b) =>     cut cs : bin * bin
+                          call dupbin cs b
+                        read cs (c1,c2)
+                        cut b1 : bin
+                          write b1 'b0(c1)
+                        cut b2 : bin
+                          write b2 'b0(c2)
+                        write bs (b1,b2)
+	| 'b1(b) =>     cut cs : bin * bin
+                          call dupbin cs b
+                        read cs (c1,c2)
+                        cut b1 : bin
+                          write b1 'b1(c1)
+                        cut b2 : bin
+                          write b2 'b1(c2)
+                        write bs (b1,b2) 
+	}
+
+proc dupnat (ns: nat * nat) (n: nat) =
+	read n {
+	| 'zero(u) => cut z : nat
+			call zeronat z
+		      cut z2 : nat
+			write z2 'zero(u)
+		      write ns (z,z2)
+	| 'succ(m) => cut p1 : nat * nat
+			call dupnat p1 m
+		      read p1 {
+			| (m,n) => cut m1 : nat
+					write m1 'succ(m)
+				   cut n1: nat
+					write n1 'succ(n)
+				   write ns (m1,n1)
+		      }
+}
+
+proc addnat (s : nat) (m : nat) (n : nat) = 
+	read m {
+	| 'zero(u) =>	read u ()
+			id s n
+	| 'succ(m) =>	cut sn : nat
+			  write sn 'succ(n)
+			call addnat s m sn
+	}
+
+fail proc mulnat (p : nat) (m : nat) (n : nat) =
+	read m {
+	| 'zero(u) =>	cut v : 1
+			  call iforgornat v n
+			read v ()
+			write p 'zero(u)
+	| 'succ(m) =>	cut mn : nat
+			  call mulnat mn m n
+			call addnat p mn n 
+	}
+
+proc mulnat (p : nat) (m : nat) (n : nat) =
+	read m {
+        | 'zero(u) =>   cut v : 1
+                          call iforgornat v n
+                        read v ()
+                        write p 'zero(u)
+        | 'succ(m) =>	cut ns : nat * nat
+			  call dupnat ns n
+			read ns (n1,n2)   
+			cut mn : nat
+                          call mulnat mn m n1
+			call addnat p mn n2	
+}
+
+proc doublenat (doublen : nat) (n : nat) =
+	cut ns : nat * nat
+	  call dupnat ns n
+	read ns (n1,n2)
+	call addnat doublen n1 n2
+
+proc dplusonenat (dpo : nat) (n : nat) =
+	cut dbd : nat
+	  call doublenat dbd n
+	write dpo 'succ(dbd)
+
+proc bin2nat (n : nat) (b : bin) =
+	read b {
+	| 'end(u) =>	write n 'zero(u)
+	| 'b0(b) =>	cut n0 : nat
+			  call bin2nat n0 b
+			call doublenat n n0
+	| 'b1(b) =>	cut n1 : nat
+			  call bin2nat n1 b
+			call dplusonenat n n1
+	}
+
+proc threebin2nat (n : nat) =
+	cut thb : bin
+	  call threebin thb
+	call bin2nat n thb
+			

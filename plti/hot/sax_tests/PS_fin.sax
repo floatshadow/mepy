@@ -1,0 +1,80 @@
+type one = +{'zero : 1}
+type two = +{'zero : 1, 'one : 1}
+type three = +{'two : 1, 'zero : 1, 'one : 1}
+type four = +{'two : 1, 'zero : 1, 'one : 1, 'three : 1}
+type five = +{'two : 1, 'zero : 1, 'four : 1, 'one : 1, 'three : 1}
+type six = +{'two : 1, 'zero : 1, 'four : 1, 'one : 1, 'three : 1, 'five : 1}
+type seven = +{'two : 1, 'zero : 1, 'four : 1, 'one : 1, 'three : 1, 'five : 1, 'six : 1}
+type eight = +{'two : 1, 'zero : 1, 'four : 1, 'one : 1, 'three : 1, 'seven : 1, 'five : 1, 'six : 1}
+proc one_one (d : one) (s : one) =
+  id d s
+proc two_one (d : two) (s : one) =
+  id d s
+proc three_one (d : three) (s : one) =
+  id d s
+proc four_one (d : four) (s : one) =
+  id d s
+proc five_one (d : five) (s : one) =
+  id d s
+proc six_one (d : six) (s : one) =
+  id d s
+proc seven_one (d : seven) (s : one) =
+  id d s
+proc eight_one (d : eight) (s : one) =
+  id d s
+proc two_two (d : two) (s : two) =
+  id d s
+proc three_two (d : three) (s : two) =
+  id d s
+proc four_two (d : four) (s : two) =
+  id d s
+proc five_two (d : five) (s : two) =
+  id d s
+proc six_two (d : six) (s : two) =
+  id d s
+proc seven_two (d : seven) (s : two) =
+  id d s
+proc eight_two (d : eight) (s : two) =
+  id d s
+proc three_three (d : three) (s : three) =
+  id d s
+proc four_three (d : four) (s : three) =
+  id d s
+proc five_three (d : five) (s : three) =
+  id d s
+proc six_three (d : six) (s : three) =
+  id d s
+proc seven_three (d : seven) (s : three) =
+  id d s
+proc eight_three (d : eight) (s : three) =
+  id d s
+proc four_four (d : four) (s : four) =
+  id d s
+proc five_four (d : five) (s : four) =
+  id d s
+proc six_four (d : six) (s : four) =
+  id d s
+proc seven_four (d : seven) (s : four) =
+  id d s
+proc eight_four (d : eight) (s : four) =
+  id d s
+proc five_five (d : five) (s : five) =
+  id d s
+proc six_five (d : six) (s : five) =
+  id d s
+proc seven_five (d : seven) (s : five) =
+  id d s
+proc eight_five (d : eight) (s : five) =
+  id d s
+proc six_six (d : six) (s : six) =
+  id d s
+proc seven_six (d : seven) (s : six) =
+  id d s
+proc eight_six (d : eight) (s : six) =
+  id d s
+proc seven_seven (d : seven) (s : seven) =
+  id d s
+proc eight_seven (d : eight) (s : seven) =
+  id d s
+proc eight_eight (d : eight) (s : eight) =
+  id d s

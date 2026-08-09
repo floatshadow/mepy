@@ -1,0 +1,31 @@
+/* Fun with shadowing */
+type bool = +{'true : 1, 'false : 1}
+
+/* This should typecheck */
+proc h (d : 1) (x : +{'true : 1, 'false : 1}) =
+     cut y : 1
+         read x {
+         | 'true(d)  => id y d
+         | 'false(d) => id y d
+         }
+    id d y
+
+
+/* But this should not */
+fail proc f (d : 1) (x : bool) =
+    read x {
+    | 'true(d)  => cut u : 1
+                       id u d
+                   id d u
+    | 'false(d) => cut u : 1
+                       id u d
+                   id d u
+     }
+
+
+proc g (d : 1) =
+     cut x : bool
+         cut u : 1
+             write u ()
+         write x 'true(u)
+     call h d x

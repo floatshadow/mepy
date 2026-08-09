@@ -1,0 +1,266 @@
+type bool = +{'true : 1, 'false: 1}
+type nat = +{'zero : 1, 'succ : nat}
+type sortedlist = +{'nil : 1, 'cons : nat * sortedlist}
+
+
+proc true (x:bool) = cut u :1
+                      write u ()
+                    write x 'true(u)
+
+proc false (x:bool) = cut u :1
+                      write u ()
+                    write x 'false(u)
+
+proc iforgor2 (r:1) (u:1) (v:1) =
+	read u ()
+	id r v
+
+proc iforgorbool (x:1) (b:bool) = 
+	read b {
+	| 'true(u) => id x u
+	| 'false(u) => id x u
+}
+
+proc iforgornat (r:1) (x:nat) = read x {
+        | 'zero(u) => id r u
+        | 'succ(x) => call iforgornat r x
+}
+
+proc dupnat (p: nat * nat) (n : nat) = read n {
+	| 'zero(u) => cut z : nat
+			call zero z
+		      cut z2 : nat
+			write z2 'zero(u)
+		      write p (z,z2)
+	| 'succ(m) => cut p1 : nat * nat
+			call dupnat p1 m
+		      read p1 (m,n)
+		      cut m1 : nat
+			write m1 'succ(m)
+		      cut n1: nat
+			write n1 'succ(n)
+		      write p (m1,n1)
+}
+
+proc and (x:bool) (a:bool) (b:bool) = read a {
+					| 'true(u) => 	read u ()
+							id x b
+					| 'false(u) => cut f : 1
+							 call iforgorbool f b
+						       cut f2 : 1
+							 call iforgor2 f2 f u
+						       read f2 ()
+						       call false x
+					}
+
+proc zero (x:nat) = cut u :1
+                      write u ()
+                    write x 'zero(u)
+
+proc succ (r:nat) (x:nat) = write r 'succ(x)
+
+proc pred (r:nat) (x:nat) = read x {
+  | 'zero(u) => cut n : nat
+                   write n 'zero(u)
+                id r n
+  | 'succ(n) => id r n
+ }
+
+proc one (o:nat) = cut z : nat
+                     call zero z
+                   call succ o z
+
+proc two (tw:nat) = cut o : nat
+                     call one o
+                   call succ tw o
+
+proc three (th:nat) = cut tw : nat
+                       call two tw
+                     call succ th tw
+
+proc leq (r: bool) (a: nat) (b: nat) = read a {
+| 'zero(u) => 	cut v : 1
+			call iforgornat v b
+		cut w : 1
+			call iforgor2 w u v
+		write r 'true(w)
+| 'succ(m) =>	read b {
+		| 'zero(v) =>	cut u : 1
+					call iforgornat u m
+				cut w : 1
+					call iforgor2 w u v
+				write r 'false(w)
+		| 'succ(n) =>	call leq r m n
+		}
+}
+
+proc nillist (n:sortedlist) =
+  cut u : 1
+    write u ()
+  write n 'nil(u)
+
+
+proc insert (r: sortedlist) (l: sortedlist) (n: nat) = 
+	read l {
+		| 'nil(u) => 	read u ()
+				cut e : sortedlist
+				  call nillist e
+				cut p : nat * sortedlist
+				  write p (n,e)
+				write r 'cons(p)
+
+				
+		| 'cons(p) =>	read p (hd,tl)
+				cut hdp : nat * nat
+				  call dupnat hdp hd
+				cut np : nat * nat
+				  call dupnat np n
+				read hdp (hd1,hd2)
+				read np (n1,n2)
+				cut nleqhd : bool
+				  call leq nleqhd n1 hd1
+		  		read nleqhd {
+				| 'true(v) => cut p2 : nat * sortedlist
+						write p2 (hd2, tl)
+					     cut tl2: sortedlist
+						write tl2 'cons(p2)
+					     cut p3 : nat * sortedlist
+						write p3 (n2, tl2)
+					     read v ()
+					     write r 'cons(p3)
+				| 'false(v) => 
+					cut tl2 : sortedlist
+					  call insert tl2 tl n2
+					cut p2 : nat * sortedlist
+					  write p2 (hd2,tl2)
+					read v ()
+					write r 'cons(p2)
+				}
+	}
+
+proc onetwothree (l:sortedlist) =
+  cut o : nat
+    call one o
+  cut tw : nat
+    call two tw
+  cut th : nat
+    call three th
+  cut e : sortedlist
+    call nillist e
+  cut thpair : nat * sortedlist
+    write thpair (th,e)
+  cut thlist : sortedlist
+    write thlist 'cons(thpair)
+  cut twthpair : nat * sortedlist
+    write twthpair (tw,thlist)
+  cut twthlist : sortedlist
+    write twthlist 'cons(twthpair)
+  cut pair : nat * sortedlist
+    write pair (o,twthlist)
+  write l 'cons(pair)
+
+proc onethree (l:sortedlist) = 
+  cut o : nat
+    call one o
+  cut th : nat
+    call three th
+  cut e : sortedlist
+    call nillist e
+  cut thpair : nat * sortedlist
+    write thpair (th,e)
+  cut thlist : sortedlist
+    write thlist 'cons(thpair)
+  cut pair : nat * sortedlist
+    write pair (o,thlist)
+  write l 'cons(pair)
+
+proc twointoonethree (l:sortedlist) = 
+  cut t : nat
+    call two t
+  cut ot : sortedlist
+    call onethree ot
+  call insert l ot t
+
+type list =  +{'nil : 1, 'cons : nat * list}
+type funkylist1 = +{'nil : 1, 'cons : nat * funkylist2}
+type funkylist2 = +{'nil : 1, 'cons : nat * funkylist1}
+
+proc iforgorlistpair (r:1) (p: nat * list) =
+	read p (hd,tl)
+	cut u : 1
+	  call iforgornat u hd
+	read u ()
+	cut v : 1
+	  call iforgorlist v tl
+	id r v
+
+proc iforgorlist (r:1) (l:list) = read l {
+	| 'nil(u) => id r u
+        | 'cons(p) => call iforgorlistpair r p
+}
+
+proc insertionsort_help (sl : sortedlist * list) (s : sortedlist) (l : list) =
+	read l {
+	| 'nil(u) =>	cut e : list
+			  write e 'nil(u)
+			write sl (s,e)
+	| 'cons(p) =>	read p (hd,tl)
+			cut news : sortedlist
+			  call insert news s hd
+			call insertionsort_help sl news tl
+	}
+
+proc insertionsort (s : sortedlist) (l : list) =
+	cut e : sortedlist
+	  call nillist e
+	cut sl : sortedlist * list
+	  call insertionsort_help sl e l
+	read sl (res, empty)
+	cut u : 1
+	  call iforgorlist u empty
+	read u ()
+	id s res
+
+/* subtyping 
+proc inssortonetwothree (s : sortedlist) =
+	cut s123 : sortedlist
+	  call onetwothree s123
+	call insertionsort s s123
+*/
+
+proc unsortnillist (e : list) =
+	cut u : 1
+	  write u ()
+	write e 'nil(u)
+
+proc unsort1 (l : list) =
+	cut o : nat
+	  call one o
+	cut e : list
+	  call unsortnillist e
+	cut p : nat * list
+	  write p (o,e)
+	write l 'cons(p)
+
+proc unsort21 (l : list) = 
+	cut tw : nat
+	  call two tw
+	cut l1 : list
+	  call unsort1 l1
+	cut p : nat * list
+	  write p (tw,l1)
+	write l 'cons(p)
+
+proc unsort321  (l : list) =
+	cut th : nat
+	  call three th
+	cut l21 : list
+	  call unsort21 l21
+	cut p : nat * list
+	  write p (th,l21)
+	write l 'cons(p)
+
+proc inssort321 (s : sortedlist) =
+	cut l : list
+	  call unsort321 l
+	call insertionsort s l
