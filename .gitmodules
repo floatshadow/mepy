@@ -1,0 +1,6 @@
+[submodule "plti/hashcons/lib/hash_sl2"]
+	path = plti/hashcons/lib/hash_sl2
+	url = https://github.com/srijs/hwsl2-core.git
+[submodule "cstar/proof"]
+	path = cstar/proof
+	url = https://gitee.com/cstarlang/cstar_stdlib.git
