@@ -1,0 +1,7 @@
+(executable
+ (name main)
+ (public_name pratty)
+ (modules Main)
+ (libraries pratty core core_unix.command_unix pprint)
+ (preprocess
+  (pps ppx_jane)))

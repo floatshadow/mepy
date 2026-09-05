@@ -1,0 +1,21 @@
+(lang dune 3.22)
+(name pratty)
+(generate_opam_files true)
+
+(authors "Siyuan Zhu")
+(maintainers "Siyuan Zhu")
+(license MIT)
+
+(package
+ (name pratty)
+ (synopsis "A teaching implementation of generalized Pratt parsing")
+ (description
+  "An OCaml implementation of the ECOOP 2026 paper A Simple Recipe for Writing Decent Recursive Descent Parsers, with extensible rules and generated syntax diagrams.")
+ (depends
+  (ocaml (>= 5.2))
+  core
+  core_unix
+  pprint
+  ppx_jane)
+ (tags
+  (parser pratt ocaml education)))

@@ -1,0 +1,22 @@
+(include_subdirs unqualified)
+
+(library
+ (name pratty)
+ (public_name pratty)
+ (modules
+  Source
+  Document
+  Token
+  SyntaxKind
+  Tree
+  Lexer
+  Operator
+  ParseRule
+  Grammar
+  Language
+  Extension
+  Parser
+  Diagram)
+ (libraries core pprint)
+ (preprocess
+  (pps ppx_jane)))

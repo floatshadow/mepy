@@ -1,0 +1,2 @@
+((select System println)
+  (((select String format) "value: %d") answer))

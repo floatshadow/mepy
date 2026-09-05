@@ -1,0 +1,9 @@
+let rec map f xs =
+  match xs with
+  | Nil -> Nil
+  | Cons x -> Cons (f x);;
+
+if ready then map f xs else Nil;;
+
+type ('a, 'b) result = Ok of 'a | Error of 'b;;
+exception Broken of string;;

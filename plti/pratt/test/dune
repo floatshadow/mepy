@@ -1,0 +1,5 @@
+(test
+ (name test_pratty)
+ (libraries pratty core pprint)
+ (preprocess
+  (pps ppx_jane)))

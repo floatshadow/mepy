@@ -1,0 +1,10 @@
+(let-rec
+  (=
+    ((map f) xs)
+    (match xs (case Nil Nil) (case (Cons x) (Cons (f x))))))
+(if ready ((map f) xs) Nil)
+(type
+  (type-binding
+    (type-head result 'a 'b)
+    (items (of Ok 'a) (of Error 'b))))
+(exception (of Broken string))

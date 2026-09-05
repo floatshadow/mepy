@@ -1,0 +1,12 @@
+(* The PDF prints None as print's left power, even though §3.3 says that None
+   makes a keyword a delimiter that cannot start an expression. We use 10 so
+   the example is executable, and retain None for the `format` delimiter. *)
+#keyword "print" 10 10;;
+#keyword "format" None None;;
+
+#extend ["term",
+  [keyword "print"; ["term", "x"]; keyword "format";
+   ["string-literal", "f"]],
+  [System.println (String.format f x)]];;
+
+print answer format "value: %d";;

@@ -1,0 +1,8 @@
+(* Figure 1 and Example 1: multiplication crosses the current threshold,
+   while the second plus does not. *)
+a + b * c;;
+a + b + c;;
+
+(* Section 2.3: first and last characters independently determine binding. *)
+a + b |> f |> g;;
+f <| g <| a + b;;
