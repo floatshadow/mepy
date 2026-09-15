@@ -37,6 +37,10 @@ designing an abstraction boundary, adding a node to a core tree type, etc.
   invariants. Suffixes are load-bearing: `_exn` raises, `_opt` returns `option`,
   `_unsafe` skips invariant checks for speed. Don't attach these suffixes to
   functions that don't have the matching behavior.
+- **Hash tables:** Use domain values as keys, with tuples or variants for composite keys.
+  Define a key module with `type t` and `[@@deriving compare, sexp, hash]` via `ppx_jane`.
+  Create tables with `Hashtbl.create (module Key)`; primitive keys use `(module String)`
+  or `(module Int)`.
 - **Pretty-print with `PPrint`, never string concatenation or sprintf** — we prefer 
   generate PPrint's document through `pp_*` and `PPrint.ToChannel.pretty` to print.
 - **Errors:** - Default channel is **exceptions / `failwith`**, with messages built via string
@@ -102,4 +106,3 @@ Run through this before writing any OCaml:
 - Don't break `{ record with … }` update sites; keep any placeholder fields that
   exist to make record-update legal.
 - Make the change the task needs; don't reformat or restyle untouched code.
-
