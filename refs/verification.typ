@@ -42,6 +42,20 @@
 #let bst = math.op("bst")
 #let mem = math.op("mem")
 #let mmod = math.op("mod")
+// ARM：计算类型 Σ ▷ T / S、控制效果 (∀x.C1) ⇒ C2、精化类型 {x:B | φ}
+#let pure = $square$
+#let comp(s, t, e) = $#s triangle.r #t thin \/ thin #e$
+#let eff(x, c1, c2) = $(forall #x. thin #c1) => #c2$
+#let rfn(x, b, p) = ${#x : #b mid(|) #p}$
+#let hndl(h, c) = $"with" #h "handle" #c$
+#let ret(v) = $"return" #v$
+#let ite(v, a, b) = $"if" #v "then" #a "else" #b$
+#let opn = $"op"$
+#let tX = $tilde(X) : tilde(B)$
+#let cps(e) = $⟦#e⟧$
+#let sapp = math.class("binary", $overline(@)$)
+#let slam = $overline(lambda)$
+#let sLam = $overline(Lambda)$
 
 // 推导规则：统一用 curryst 排版，多条规则用 rule-set 横向排列、自动换行。
 // top/bottom-edge 取 "bounds"，让上划线、下标计入盒子高度，避免与横线或相邻行重叠。
@@ -427,3 +441,232 @@ $
 - *规格负担*：覆盖规格与安全规格几乎同形，只是结果换成方括号，因此可以复用 Liquid Types 的谓词语言与公理。两者合用可刻画精确的输出集合，但安全性仍需另行检查。
 - *保证强度*：只保证每个目标值以非零概率可达，不涉及分布或采样次数；递归必须良基终止，实际中通常需要显式的 size 或 fuel 参数。
 - *版本校记*：v2 例 5.1 的两个分支写反，例 5.2 的目标类型又写成 $cov(intt, nu >= 0)$，本文统一为图 2 的偶数生成器；附录中 $Ex$ 对上下文的折叠式把内层绑定误写为 $x_1$，本文按从右向左消去理解。
+
+= Answer Refinement Modification（POPL '24）
+
+本章整理 Kawamata、Unno、Sekiyama 与 Terauchi 的 #link("https://arxiv.org/abs/2307.15463v2")[_Answer Refinement Modification: Refinement Type System for Algebraic Effects and Handlers_]（POPL 2024，依据含补充材料的 arXiv v2）。读者应熟悉精化类型、代数效应，以及 shift/reset 类型系统中的答案类型修改（ATM）。下文聚焦类型理论：控制效果怎样描述延续，核心规则为何如此设计，谓词多态为何不可缺，元理论，以及保持双向类型的 CPS 变换。
+
+== 问题：答案的精化随操作调用而改变
+
+*答案类型*是最近的 handling 构造的类型，也就是被捕获的定界延续的返回类型。考虑
+```
+with { return x ↦ x;  decide(_, k) ↦ max (k true) (k false) } handle
+  let a = if decide () then 10 else 20 in
+  let b = if decide () then 1 else 2 in
+  a - b
+```
+程序求值为 19。第一次 `decide` 捕获的延续满足 $k thin y = (y ? 9 : 19)$（第二次 `decide` 已在其中被同一 handler 处理），子句却返回 19，于是答案从 $rfn(z, intt, z = (y ? 9 : 19))$ 变为 $rfn(z, intt, z = 19)$。第二次调用的延续满足 $k thin y = (y ? a - 1 : a - 2)$，子句返回 $a - 1$。基础类型始终是 int，变的只是精化，作者称之为*答案精化修改*（ARM）。若答案类型固定，两次调用的延续只能共用一个类型，最好也只能得到 $z in {8, 9, 18, 19}$。
+
+答案类型本身也可以变：`with {op((), k) ↦ k 0 < k 1} handle 1 + op ()` 中延续返回 int，整个构造却返回 bool，这就是 ATM。本文系统同时支持两者，但验证 OCaml 5 这类不允许 ATM 的程序只需要 ARM。
+
+== 语言与类型
+
+语言采用 fine-grain call-by-value 与深 handler：
+$
+  v & ::= x | p | "rec"(f, x). thin c \
+  c & ::= ret(v) | opn v | v_1 thin v_2 | ite(v, c_1, c_2) | letin(x, c_1, c_2) | hndl(h, c) \
+  h & ::= {"return" x_r |-> c_r, ("op"_i (x_i, k_i) |-> c_i)_i} quad quad K ::= [thin] | letin(x, K, c)
+$
+关键归约是
+$
+  hndl(h, K["op"_i thin v]) --> c_i [x_i |-> v, thin k_i |-> lambda y. thin hndl(h, K[ret(y)])].
+$
+$K$ 不跨越 handler，所以捕获的是到最近 handler 的延续，$k_i$ 调用时重新装上 $h$。正文不含转发，类型系统要求 $h$ 处理所有可能调用的操作；转发可编码为子句 $opn(x, k) |-> letin(y, opn x, k thin y)$，其直接规则见后文。
+
+类型语法如下：
+$
+  T & ::= rfn(x, B, phi) | (x : T) -> C quad quad C ::= comp(Sigma, T, S) quad quad S ::= pure | eff(x, C_1, C_2) \
+  Sigma & ::= {("op"_i : forall tilde(X)_i : tilde(B)_i. thin F_i)_i} quad quad F ::= (x : T_1) -> ((y : T_2) -> C_1) -> C_2
+$
+上下文除变量绑定外还含谓词变量绑定 $X : tilde(B)$。
+
+#def(supplement: [控制效果])[
+  设计算 $c$ 具有 $comp(Sigma, T, eff(x, C_1, C_2))$，$K$ 是它到最近 handler 的延续。
+  - *初始答案类型* $C_1$ 是对延续的*假设*：对 $c$ 返回的任意 $x : T$，$K[ret(x)]$ 具有 $C_1$。
+  - *最终答案类型* $C_2$ 是对外层的*保证*：最近的 handling 构造整体具有 $C_2$。
+  - $pure$ 表示不调用任何操作；$Sigma$ 列出可能调用的操作。
+]
+
+控制效果就是内联写出的 CPS 类型 $((x : T) -> C_1) -> C_2$，$C_1$ 可以依赖延续的输入 $x$，这一形式取自 Sekiyama 与 Unno 对 shift0/reset0 的依赖控制效果。前述 ATM 例子中，`op ()` 具有 $comp(Sigma, intt, eff(x, rfn(y, intt, y = x + 1), rfn(z, boolt, z = "true")))$。
+
+签名中 op 的类型方案就是其 handler 子句的类型：$x : T_1$ 是参数，$k : (y : T_2) -> C_1$ 是延续，子句体具有 $C_2$。谓词变量 $tilde(X)$ 在每个调用点单独实例化。
+
+== 核心规则
+
+#rules(
+  R("T-Op",
+    prem(
+      $Sigma in.rev opn : forall tX. thin (x : T_1) -> ((y : T_2) -> C_1) -> C_2$,
+      prow($Gamma tack.r Sigma$, $Gamma tack.r tilde(A) : tilde(B)$, $Gamma tack.r v : T_1 [tilde(X) |-> tilde(A)]$),
+    ),
+    $Gamma tack.r opn v : comp(Sigma, T_2 theta, (eff(y, C_1, C_2)) theta)$),
+  R("T-LetIp",
+    prem(
+      $Gamma tack.r c_1 : comp(Sigma, T_1, eff(x, C, C_(12)))$,
+      $Gamma, x : T_1 tack.r c_2 : comp(Sigma, T_2, eff(y, C_(21), C))$,
+      $x in.not "fv"(T_2) union "fv"(Sigma) union ("fv"(C_(21)) without {y})$,
+    ),
+    $Gamma tack.r letin(x, c_1, c_2) : comp(Sigma, T_2, eff(y, C_(21), C_(12)))$),
+  R("T-Hndl",
+    prem(
+      $h = {"return" x_r |-> c_r, ("op"_i (x_i, k_i) |-> c_i)_i}$,
+      $Sigma = {("op"_i : forall tilde(X)_i : tilde(B)_i. thin (x_i : T_(1 i)) -> ((y_i : T_(2 i)) -> C_(1 i)) -> C_(2 i))_i}$,
+      prow($Gamma tack.r c : comp(Sigma, T, eff(x_r, C_1, C_2))$, $Gamma, x_r : T tack.r c_r : C_1$),
+      $(Gamma, tilde(X)_i : tilde(B)_i, x_i : T_(1 i), k_i : (y_i : T_(2 i)) -> C_(1 i) tack.r c_i : C_(2 i))_i$,
+    ),
+    $Gamma tack.r hndl(h, c) : C_2$),
+)
+
+*T-Op：调用点与子句对偶。* 其中 $theta = [tilde(X) |-> tilde(A), x |-> v]$。`op v` 的延续正是子句拿到的 $k$，所以初始答案取 $k$ 的返回类型 $C_1$；调用之后 handling 构造被子句体取代，所以最终答案取子句体的类型 $C_2$。
+
+*T-LetIp：效果复合。* $c_1$ 的延续是“先执行 $c_2$，再执行整个 let 的延续”，所以 $c_1$ 对延续的假设 $forall x. thin C$ 由 $c_2$ 的保证 $C$ 兑现；整个 let 的假设取 $c_2$ 的，保证取 $c_1$ 的。这就是 CPS 中的函数复合，它也说明类型信息*由后向前*流动：先知道最后一步对延续的假设，才能算出前面各步的答案。$C$ 中可以出现 $x$（由 $forall x$ 绑定），但 $x$ 不得逃逸到 $T_2$、$Sigma$ 或 $C_(21)$。两侧都纯时用 T-LetP 得到纯效果；一纯一不纯时，先用 S-Embed 提升纯的一侧。
+
+*T-Hndl：return 子句是最后一段延续。* 所以 $c_r$ 的类型是初始答案 $C_1$，且 $x_r$ 与效果中的绑定变量同名；整个构造取最终答案 $C_2$。各操作子句泛化 $tilde(X)_i$ 后按 $Sigma$ 检查，$Sigma$ 的定义域必须恰为 $h$ 处理的操作。
+
+其余规则与标准精化类型一致：基类型变量取自化类型 $rfn(z, B, z = x)$，T-If 在分支中加入 $v = "true"$ 或 $v = "false"$，$ret(v)$ 具有 $comp(emptyset, T, pure)$。
+
+== 子类型
+
+#rules(
+  R("S-Comp",
+    $Gamma tack.r Sigma_2 st Sigma_1$, $Gamma tack.r T_1 st T_2$, $Gamma | T_1 tack.r S_1 st S_2$,
+    $Gamma tack.r comp(Sigma_1, T_1, S_1) st comp(Sigma_2, T_2, S_2)$),
+  R("S-ATM",
+    $Gamma, x : T tack.r C_(21) st C_(11)$, $Gamma tack.r C_(12) st C_(22)$,
+    $Gamma | T tack.r eff(x, C_(11), C_(12)) st eff(x, C_(21), C_(22))$),
+  R("S-Embed",
+    $Gamma, x : T tack.r C_1 st C_2$, $x in.not "fv"(C_2)$,
+    $Gamma | T tack.r pure st eff(x, C_1, C_2)$),
+)
+
+$Sigma$ 描述 handler 必须提供的子句。S-Sig 规定操作更多、方案更强的签名是子类型，因此 S-Comp 对 $Sigma$ 逆变：调用操作较少的计算可以视为调用更多操作。S-ATM 中初始答案是假设，故逆变；最终答案是保证，故协变。
+
+S-Embed 是由纯到不纯的唯一途径。纯计算不捕获延续，最近 handler 得到的就是延续的结果，所以只要假设蕴涵保证，就可以把 $pure$ 看作 $eff(x, C_1, C_2)$；$x$ 在外层不可见，故 $x in.not "fv"(C_2)$。例如由 $x_r : rfn(z, intt, z = a - b) tack.r rfn(z, intt, z = x_r) st rfn(z, intt, z = a - b)$，$ret(a - b)$ 获得效果 $eff(x_r, rfn(z, intt, z = x_r), rfn(z, intt, z = a - b))$。
+
+== 谓词多态为何不可缺
+
+shift0/reset0 中每个 shift0 自带处理延续的代码，Sekiyama 与 Unno 可以按调用点分别给出答案类型。handler 则不同：同一 handler 下对 op 的所有调用共用一个子句，签名只能写一个子句类型，各次调用的延续却行为各异。没有 $tilde(X)$ 时，$k$ 的类型必须同时覆盖所有调用点，精度随之丧失。有了 $forall tilde(X)$，子句像多态函数一样只检查一次，每个 T-Op 各自实例化。Cong 与 Asai（2022）的 ATM 系统缺少这种抽象，只允许一个操作，且多次调用要求 return 子句与操作子句类型相同，无法跟踪逐次变化的延续。交集类型也能区分调用点，但签名须预知所有调用上下文，不够模块化。
+
+== 例子
+
+#eg(supplement: [非确定选择])[
+  写成本文语法后，decide 子句为 $letin(r_t, k "true", letin(r_f, k "false", max thin r_t thin r_f))$。在 $Gamma = X : (intt, boolt), x : unitt, k : (y : boolt) -> rfn(z, intt, X(z, y))$ 下它具有 $rfn(z, intt, phi)$，其中 $phi = forall r_t, r_f. thin X(r_t, "true") and X(r_f, "false") ==> z = max(r_t, r_f)$，故
+  $
+    Sigma = {"decide" : & forall X : (intt, boolt). thin (x : unitt) \
+      & -> ((y : boolt) -> rfn(z, intt, X(z, y))) -> rfn(z, intt, phi)}.
+  $
+  推导从程序末尾开始：
+  + $ret(a - b)$ 经 S-Embed 得 $eff(x_r, rfn(z, intt, z = x_r), C_2)$，$C_2 = rfn(z, intt, z = a - b)$。
+  + $ite(y', ret(1), ret(2))$ 经 S-Embed 得 $eff(b, C_2, C_3)$，$C_3 = rfn(z, intt, z = (y' ? a - 1 : a - 2))$。
+  + 第二次 decide 取 $A = lambda(z, y). thin z = (y ? a - 1 : a - 2)$，使初始答案恰为 $C_3$；最终答案 $C_1 = rfn(z, intt, phi[X |-> A])$，等价于 $rfn(z, intt, z = a - 1)$。
+  + 同理 $ite(y, ret(10), ret(20))$ 得 $eff(a, C_1, C_4)$，$C_4 = rfn(z, intt, z = (y ? 9 : 19))$。
+  + 第一次 decide 取 $A' = lambda(z, y). thin z = (y ? 9 : 19)$，最终答案 $phi[X |-> A']$ 等价于 $z = 19$。
+  T-LetIp 把各段复合为 $eff(x_r, rfn(z, intt, z = x_r), rfn(z, intt, z = 19))$，T-Hndl 结合 return 子句得到 $rfn(z, intt, z = 19)$。两次调用对 $X$ 的实例化不同，这正是谓词多态的用处。
+]
+
+#eg(supplement: [状态与强更新])[
+  ```
+  (with h handle (set 3; let n = get () in set 5; let m = get () in n + m)) 0
+  h = { return x ↦ λs. x;  set(x, k) ↦ λs. k () x;  get(_, k) ↦ λs. k s s }
+  ```
+  handler 以状态传递实现可变引用。记 $P(psi) = (s : intt) -> rfn(z, intt, psi)$，签名为
+  $
+    "set" & : forall X : (intt, intt). thin (x : intt) -> (unitt -> P(X(z, s))) -> P(X(z, x)) \
+    "get" & : forall X : (intt, intt, intt). thin unitt -> ((y : intt) -> P(X(z, s, y))) -> P(X(z, s, s))
+  $
+  适当实例化 $X$ 后，各段的控制效果依次为
+  $
+    "set" 3 & : eff(\_, P(z = s + 5), P(z = 3 + 5)) \
+    "get" () & : eff(n, P(z = n + 5), P(z = s + 5)) \
+    "set" 5 & : eff(\_, P(z = n + s), P(z = n + 5)) \
+    "get" () & : eff(m, P(z = n + m), P(z = n + s)) \
+    ret(n + m) & : eff(x_r, P(z = x_r), P(z = n + m))
+  $
+  每行的最终答案恰是上一行的初始答案，T-LetIp 把它们复合为 $eff(x_r, P(z = x_r), P(z = 8))$，再由 T-Hndl 与 T-App 得到 $rfn(z, intt, z = 8)$。从下往上读，set $x$ 把答案中的 $s$ 换成 $x$，get 把结果变量换成 $s$：答案类型充当了状态上的最弱前置条件变换。流不敏感的系统会混淆两次 set，无法区分两次 get 的结果。
+]
+
+#eg(supplement: [文件操作的协议])[
+  协议 $("open" ("read" | "write")^* "close")^*$ 对应两状态自动机：open 从 $Q_0$ 到 $Q_1$，read、write 在 $Q_1$ 自环，close 回到 $Q_0$。handler 以状态传递记录自动机状态，操作类型由模板给出：
+  $
+    F(T_"in", T_"out", Q_"pre", Q_"post") = & T_"in" -> (T_"out" -> (rfn(x, intt, x = Q_"post") -> C)) \
+    & -> (rfn(x, intt, x = Q_"pre") -> C)
+  $
+  例如 $"open" : F("str", unitt, Q_0, Q_1)$。由 T-Op，调用具有效果 $S(Q_"pre", Q_"post") = (rfn(x, intt, x = Q_"post") -> C) => (rfn(x, intt, x = Q_"pre") -> C)$。T-LetIp 能把 $S(q_1, q_2)$ 与 $S(q_2, q_3)$ 复合为 $S(q_1, q_3)$，中间状态不一致时则无法复合，例如 close 之后直接 write。循环规则要求循环体具有 $C => C$，相当于循环不变式。于是
+  ```
+  λx. while (★) { open x;
+                  while (★) { let y = read () in write (y ^ "X") };
+                  close () }
+  ```
+  具有 $"str" -> comp(Sigma, unitt, S(Q_0, Q_0))$。这一保证不依赖终止：`close (); Ω` 的最终答案要求初始状态为 $Q_1$，不能从 $Q_0$ 开始。
+]
+
+== 元理论
+
+#thm[（类型安全，定理 3.1）若 $emptyset tack.r c : comp(Sigma, T, S)$ 且 $c scripts(-->)^* c'$，则下列之一成立：$c' = ret(v)$ 且 $emptyset tack.r v : T$；$c' = K[opn v]$ 且 $opn in "dom"(Sigma)$；或 $c' --> c''$ 且 $emptyset tack.r c'' : comp(Sigma, T, S)$。]
+
+顶层取 $Sigma = emptyset$ 时第二种情形不会出现，返回值满足 $T$ 的精化。证明是通常的进展加主体归约，只有纸面证明，没有机械化；逻辑被抽象为若干假设，例如有效性对弱化、值代换与谓词代换封闭。主体归约中最关键的是 E-HndlOp，它依赖下面的引理。
+
+#lemma[（纯求值上下文的反演，补充材料引理 4.17）若 $Gamma tack.r K[c] : comp(Sigma, T, eff(z, C_1, C_2))$，则存在 $y, T_1, C_0$，使
+  $
+    & Gamma tack.r c : comp(Sigma, T_1, eff(y, C_0, C_2)), \
+    & Gamma, y : T_1 tack.r K[ret(y)] : comp(Sigma, T, eff(z, C_1, C_0)).
+  $
+]
+
+引理把 T-LetIp 倒过来用：在洞处切开上下文，中间答案 $C_0$ 既是 $c$ 的初始答案，也是 $K[ret(y)]$ 的最终答案。借助它可以直接读出 E-HndlOp 的类型保持。设 $hndl(h, K["op"_i thin v]) : C_2$，T-Hndl 给出 $K["op"_i thin v] : comp(Sigma, T, eff(x_r, C_1, C_2))$。引理切出 $"op"_i thin v : comp(Sigma, T_1, eff(y, C_0, C_2))$，再用 T-Hndl 得 $lambda y. thin hndl(h, K[ret(y)]) : (y : T_1) -> C_0$。另一方面，对 T-Op 反演并用 S-ATM 得到
+$
+  T_(2 i) theta st T_1, quad y : T_(2 i) theta tack.r C_0 st C_(1 i) theta, quad C_(2 i) theta st C_2 .
+$
+前两条说明捕获的延续可以充当子句的 $k_i : (y : T_(2 i) theta) -> C_(1 i) theta$，第三条说明子句体的类型可以提升到 $C_2$。S-ATM 的变型方向，恰好是让这一步成立的方向。
+
+== 操作转发
+
+补充材料给出支持转发的 T-Hndl 变体。对未处理的操作 $opn in "dom"(Sigma) without "dom"(h)$，要求存在外层签名 $Sigma'$，使
+$
+  Sigma & in.rev opn : forall tX. thin (x : T_1) -> ((y : T_2) -> comp(Sigma', T_0, eff(z, C_0, C_1))) \
+  & quad quad -> comp(Sigma', T_0, eff(z, C_0, C_2)) \
+  Sigma' & in.rev opn : forall tX. thin (x : T_1) -> ((y : T_2) -> C_1) -> C_2
+$
+且 $y in.not "fv"(C_0) without {z}$。这由对隐式子句 $letin(y, opn x, k thin y)$ 应用 T-LetIp 得出：子句里的调用由外层 handler 处理，所以内层答案都是 $Sigma'$ 上的计算，并共享 $T_0$ 与 $C_0$。可见被转发操作在内层签名中的方案是由外层方案改写而来的，这也是效果多态难以加入的原因。
+
+== CPS 变换
+
+目标语言是带记录、递归、类型多态与谓词多态的精化 λ 演算，没有 handler。类型变换的要点是
+$
+  cps(comp(Sigma, T, eff(x, C_1, C_2))) & = forall \_. thin cps(Sigma) -> ((x : cps(T)) -> cps(C_1)) -> cps(C_2) \
+  cps(comp(Sigma, T, pure)) & = forall alpha. thin cps(Sigma) -> (cps(T) -> alpha) -> alpha \
+  cps({("op"_i : forall tilde(X)_i : tilde(B)_i. thin F_i)_i}) & = {("op"_i : forall tilde(X)_i : tilde(B)_i. thin cps(F_i))_i}
+$
+精化类型保持不变，函数类型与子句类型逐点变换。计算译为接收 handler 记录与延续的函数，签名译为记录类型。纯效果译为*答案类型多态*：纯计算对任意答案都只把结果交给延续。表达式的关键情形如下，上划线表示编译期归约的静态抽象与应用，上标是变换所需的类型标注：
+$
+  cps(ret(v)) & = sLam alpha. thin slam h : {}. thin slam k : cps(T) -> alpha. thin k thin cps(v) \
+  cps((opn^tilde(A) v)^(comp(Sigma, T, eff(y, C_1, C_2)))) & = sLam alpha. thin slam h : cps(Sigma). thin slam k : (y : cps(T)) -> cps(C_1). \
+  & quad quad h \#"op" thin tilde(A) thin cps(v) thin (lambda y'. thin k thin y') \
+  cps(letin(x, c_1, c_2)) & = sLam alpha. thin slam h. thin slam k. thin cps(c_1) sapp cps(C_2) sapp h sapp (lambda x. thin cps(c_2) sapp cps(C_1) sapp h sapp k) \
+  cps((hndl(h, c))^C) & = cps(c) sapp cps(C) sapp cps(h^"ops") sapp cps(h^"ret")
+$
+let 取不纯情形，$c_1 : comp(Sigma, T_1, eff(x, C_1, C_2))$，$c_2 : comp(Sigma, T_2, eff(z, C_0, C_1))$。$cps(h^"ops")$ 是由各子句的 $Lambda tilde(X)_i. thin lambda x_i. thin lambda k_i. thin cps(c_i)$ 组成的记录，$cps(h^"ret") = lambda x_r. thin cps(c_r)$。操作调用只是从记录中取出子句，传入谓词、参数和 η 展开的延续；handling 构造把子句记录与 return 子句分别作为 handler 与延续交给被处理计算。
+
+Materzok 与 Biernacki 把纯效果译为不带延续的类型，于是变换必须知道子类型在何处提升了纯计算，只能对类型推导而非项做变换。答案类型多态统一了两种效果，变换因而只依赖项上的标注。S-Embed 由目标语言中一条较弱的多态子类型规则模拟：
+
+#rules(
+  R("SC-Poly",
+    $Gamma, beta tack.r tau_1 [alpha |-> tau] st tau_2$, $Gamma, beta tack.r tau$, $beta in.not "fv"(forall alpha. thin tau_1)$,
+    $Gamma tack.r forall alpha. thin tau_1 st forall beta. thin tau_2$),
+)
+
+取 $tau = cps(C_2)$，$cps(comp(Sigma, T, pure)) st cps(comp(Sigma, T, eff(x, C_1, C_2)))$ 就归结为 $x : cps(T) tack.r cps(C_1) st cps(C_2)$，正是 S-Embed 的前提；$alpha$ 的实例不能依赖 $x$，对应 $x in.not "fv"(C_2)$。
+
+#thm[（模拟，定理 5.1）记 $scripts(equiv)_beta$ 为静态 β 等价。若 $c scripts(-->)^* ret(v)$，则 $cps(c) sapp tau sapp {} sapp (lambda x. thin x) scripts(-->)^+ v'$ 且 $cps(v) scripts(equiv)_beta v'$；反之，若后者成立，则存在 $v$ 使 $c scripts(-->)^* ret(v)$ 且 $cps(v) scripts(equiv)_beta v'$。]
+
+#thm[（双向类型保持，定理 5.2、5.3）若 $Gamma tack.r c : C$，则 $cps(Gamma) tack.r cps(c) : cps(C)$。反之，若 $emptyset tack.r cps(c) : tau$，则存在 $C$ 使 $emptyset tack.r c : C$ 且 $emptyset tack.r cps(C) st tau$。值的情形同理。]
+
+反向保持意味着，要检查 $c : C$，可以改用不支持 handler 的精化类型检查器检查 $cps(c) : cps(C)$。它要求源程序在 let、if、rec、操作调用与 handling 构造上带类型标注，否则目标类型可能落在变换的像之外。例如 $ret(0)$ 的无标注译文 $Lambda alpha. thin lambda h. thin lambda k. thin k thin 0$ 可以取类型 $forall alpha. thin boolt -> (intt -> alpha) -> alpha$，其中 handler 的类型 bool 没有源类型与之对应。标注只需确定类型的结构，精化可以用谓词变量占位：由于精化只依赖一阶值，不会提到 $h$ 与 $k$，有 $cps(sigma(c)) = sigma(cps(c))$。
+
+代价在于：译文结构与源程序差距大，推断出的类型难以翻译回源类型；延续显式传递后类型变为高阶，有时需要高阶谓词多态才能与直接检查同样精确。
+
+== 评注
+
+- *推断*：实现先推断无精化的签名与控制效果（类似用行变量推断记录类型，并沿用 shift0/reset0 的效果推断），再把未知精化化为谓词变量，归约到 CHC 求解。签名中的谓词多态需要高阶约束，超出 CHC 的表达能力，所以实现只在 let 处推断谓词多态，其余情形靠手工添加的幽灵参数区分调用点。
+- *局限*：没有效果多态，$lambda f. thin hndl(h, f())$ 这类函数必须固定 $f$ 的签名与控制效果；没有递归计算类型，每层递归各装一个 handler 的函数（如逐层包装错误信息）无法定型；不支持类型多态的操作；只处理深 handler，浅 handler 或可借鉴 control0/prompt0 的 ATM 类型系统。
+- *模块性与精确性*：签名写出了答案类型，等于暴露 handler 的实现。这正是验证 handler 与调用方之间 assume-guarantee 契约所需要的；用计算类型变量抽象答案类型可以换回模块性，但也放弃了对 handler 的规格。作者认为如何在两者之间取舍，是一般控制效应共同的开放问题。
