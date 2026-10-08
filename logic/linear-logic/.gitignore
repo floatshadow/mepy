@@ -12,3 +12,5 @@ Makefile.rocq.conf
 rocq_mcp_cache_*.v
 _opam/
 html/
+.alectryon-cache
+.wrangler

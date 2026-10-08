@@ -32,19 +32,22 @@ type `A ⊸ A ⊗ A`.
 
 ## Reading order
 
-1. `theories/Intuitionistic/Formula.v`: why linear logic, the connectives,
+1. [`theories/Intuitionistic/Formula.v`](theories/Intuitionistic/Formula.v): why linear logic, the connectives,
    and notations.
-2. `theories/Intuitionistic/Sequent.v`: the ILL sequent calculus and
+2. [`theories/Intuitionistic/Sequent.v`](theories/Intuitionistic/Sequent.v): the ILL sequent calculus and
    worked examples.
-3. `theories/Intuitionistic/Phase.v`: phase semantics, soundness, and
+3. [`theories/Intuitionistic/Phase.v`](theories/Intuitionistic/Phase.v): phase semantics, soundness, and
    countermodels.
-4. `theories/Intuitionistic/CutElim.v`: the syntactic model, Okada's lemma,
+4. [`theories/Intuitionistic/CutElim.v`](theories/Intuitionistic/CutElim.v): the syntactic model, Okada's lemma,
    completeness, and cut elimination.
-5. `theories/Classical/Formula.v`, `Sequent.v`, `Phase.v`, `CutElim.v`:
+5. [`theories/Classical/Formula.v`](theories/Classical/Formula.v),
+   [`Sequent.v`](theories/Classical/Sequent.v),
+   [`Phase.v`](theories/Classical/Phase.v),
+   [`CutElim.v`](theories/Classical/CutElim.v):
    the same four steps for CLL. Read them side by side with the ILL files.
-6. `theories/Comparison.v`: ILL versus CLL.
-7. `theories/Types/LinearTypes.v`: the linear λ-calculus and type safety.
-8. `theories/Types/CurryHoward.v`: programs as ILL proofs.
+6. [`theories/Comparison.v`](theories/Comparison.v): ILL versus CLL.
+7. [`theories/Types/LinearTypes.v`](theories/Types/LinearTypes.v): the linear λ-calculus and type safety.
+8. [`theories/Types/CurryHoward.v`](theories/Types/CurryHoward.v): programs as ILL proofs.
 
 ## Main theorems
 
