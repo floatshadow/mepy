@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "rocq-mcp": {
+      "type": "stdio",
+      "command": "opam",
+      "args": ["exec", "--", "rocq-mcp"],
+      "env": {"ROCQ_COQC_BINARY": "rocq compile"}
+    }
+  }
+}

@@ -1,0 +1,16 @@
+-Q theories LinearLogic
+
+-arg -w
+-arg -notation-overridden
+
+theories/Intuitionistic/Formula.v
+theories/Intuitionistic/Sequent.v
+theories/Intuitionistic/Phase.v
+theories/Intuitionistic/CutElim.v
+theories/Classical/Formula.v
+theories/Classical/Sequent.v
+theories/Classical/Phase.v
+theories/Classical/CutElim.v
+theories/Comparison.v
+theories/Types/LinearTypes.v
+theories/Types/CurryHoward.v
